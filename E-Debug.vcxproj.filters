@@ -1,0 +1,264 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="E-Debug.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Page2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Page1.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EAnalyEngine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Page3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E-Debug.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Page2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Page1.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EAnalyEngine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Page3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E-Debug.def">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="res\EDebug.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="E-Debug.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="ICO.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\IP编辑框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\按钮.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\编辑框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\标签.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\表格.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\超级按钮.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\超级编辑框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\超级链接框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\超级列表框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\超文本浏览框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\打印机.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\单选框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\动画框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\动画物体.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\端口.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\分隔条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\分组框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\服务器.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\高级选择夹.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\高级影像框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\工具条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\横向滚动条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\滑块条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\画板.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\进度条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\卷帘菜单.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\客户.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\列表框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\目录框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\气泡框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\驱动器框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\日期框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\时钟.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\树型框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\数据报.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\数据库提供者.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\数据源.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\调节器.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\通用对话框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\通用提供者.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\透明标签.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\图片框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\图形按钮.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\外部数据库.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\外部数据库提供者.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\外形框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\文件框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\选择夹.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\选择框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\选择列表框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\颜色选择器.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\影像框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\月历框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\状态条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\纵向滚动条.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\组合框.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\Unknow.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="ICO\Window.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
