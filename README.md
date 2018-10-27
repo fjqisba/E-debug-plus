@@ -1,6 +1,6 @@
 # E-debug Plus
 
-关于E-debug Plus的工作原理
+关于E-debug Plus的工作原理  
 首先E-debug Plus的目的是识别函数命令,为此首先开发了ECodeMake,ECodeMake是将易语言的支持库函数转换为Esig的一款工具.
 
 Esig介绍:
