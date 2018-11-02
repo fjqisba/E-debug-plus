@@ -30,6 +30,7 @@ Release/
 *.la
 *.a
 *.lib
+!Ollydbg.lib
 
 # Executables
 *.exe
