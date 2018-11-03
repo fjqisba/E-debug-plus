@@ -57,17 +57,8 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 		strcpy(data, "0&打开分析窗口|1&关于软件");
 		return 1;
 	}
-	if (origin == PM_DISASM) {
-		if (item == 0 || IsBadReadPtr(item, sizeof(t_dump)) != 0) {   
-			return 0;
-		}
-		RtlMoveMemory(&pd, item, sizeof(t_dump));
-		if (pd.size == 0) {
-			return 0;
-		}
-		if (pd.sel1 > pd.sel0) {
-			strcpy(data, "0 易语言{0 取十六进制|1 到字节集}");
-		}
+	if (origin == PM_DISASM || PM_CPUDUMP) {
+		strcpy(data, "0 易语言{0 取十六进制|1 到字节集}");
 		return 1;
 	}
 	return 1;
@@ -104,66 +95,61 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		}
 		return;
 	}
+
+
+	HGLOBAL hClip;
+	t_dump* DumpData;
 	if (origin == PM_DISASM) {
-		HGLOBAL hClip;
-		if (action == 0) {    //取十六进制
-			t_dump* DumpData = (t_dump*)Plugingetvalue(VAL_CPUDASM);
-			int len = DumpData->sel1 - DumpData->sel0;
+		DumpData = (t_dump*)Plugingetvalue(VAL_CPUDASM);
+	}
+	else if(origin==PM_CPUDUMP)
+	{
+		DumpData = (t_dump*)Plugingetvalue(VAL_CPUDDUMP);
+	}
 
-			byte *buffer = new byte[len];
-			memset(buffer, 0, len);
-			Readmemory(buffer, DumpData->sel0, len, MM_RESILENT);
+	int len = DumpData->sel1 - DumpData->sel0;
+	byte *buffer = new byte[len];
+	memset(buffer, 0, len);
+	Readmemory(buffer, DumpData->sel0, len, MM_RESILENT);
+	if (!OpenClipboard(NULL)) {
+		return;
+	}
 
-			if (!OpenClipboard(NULL)) {
-				return;
-			}
-			EmptyClipboard();
-			hClip = GlobalAlloc(GMEM_MOVEABLE, len * 2 + 1);  //申请剪切文本空间
-			char *buff;
-			buff = (char*)GlobalLock(hClip);
+	EmptyClipboard();
 
-			for (int n = 0;n < len;n++) {					//十六进制转换
-				sprintf(buff + n * 2, "%02X", buffer[n]);
-			}
-			GlobalUnlock(hClip);
-			SetClipboardData(CF_TEXT, hClip);
-			CloseClipboard();
-			delete[] buffer;
-			return;
+	if (action == 0) {    //取十六进制
+		hClip = GlobalAlloc(GMEM_MOVEABLE, len * 2 + 1);  //申请剪切文本空间
+		char *buff;
+		buff = (char*)GlobalLock(hClip);
+		for (int n = 0;n < len;n++) {					//十六进制转换
+			sprintf(buff + n * 2, "%02X", buffer[n]);
 		}
-		if (action == 1) {	  //到字节集
-			t_dump* DumpData = (t_dump*)Plugingetvalue(VAL_CPUDASM);
-			int len = DumpData->sel1 - DumpData->sel0;
-
-			byte *buffer = new byte[len];
-			memset(buffer, 0, len);
-			Readmemory(buffer, DumpData->sel0, len, MM_RESILENT);
-
-			if (!OpenClipboard(NULL)) {
-				return;
-			}
-
-			EmptyClipboard();
-			hClip = GlobalAlloc(GMEM_MOVEABLE, len * 4 + 1);  //申请剪切文本空间
-			char *buff = (char*)GlobalLock(hClip);
-			memset(buff, 0, len * 4 + 1);
-			string byteset;//字节集
-
-			byteset.append("{");
-			for (int n = 0;n < len;n++) {					//十六进制转换
-				sprintf(buff, "%d,", buffer[n]);
-				byteset.append(buff);
-			}
-			byteset[byteset.length()-1] = '}';
-			byteset.copy(buff, byteset.length());
-			GlobalUnlock(hClip);
-			SetClipboardData(CF_TEXT, hClip);
-			CloseClipboard();   //不需要使用GlobalFree,因为内存已经由剪切板来托管
-			delete[] buffer;
-			return;
+		GlobalUnlock(hClip);
+		SetClipboardData(CF_TEXT, hClip);
+		CloseClipboard();
+		delete[] buffer;
+		return;
+	}
+	if (action == 1) {	  //到字节集
+		hClip = GlobalAlloc(GMEM_MOVEABLE, len * 4 + 1);  //申请剪切文本空间
+		char *buff = (char*)GlobalLock(hClip);
+		memset(buff, 0, len * 4 + 1);
+		string byteset;//字节集
+		byteset.append("{");
+		for (int n = 0;n < len;n++) {					//十六进制转换
+			sprintf(buff, "%d,", buffer[n]);
+			byteset.append(buff);
 		}
+		byteset[byteset.length() - 1] = '}';
+		byteset.copy(buff, byteset.length());
+		GlobalUnlock(hClip);
+		SetClipboardData(CF_TEXT, hClip);
+		CloseClipboard();   //不需要使用GlobalFree,因为内存已经由剪切板来托管
+		delete[] buffer;
+		return;
 	}
 }
+
 
 BEGIN_MESSAGE_MAP(CEDebugApp, CWinApp)
 END_MESSAGE_MAP()
