@@ -8,8 +8,6 @@ E-debug   DLL与OD的交互接口
 ————————————————————————————*/
 
 
-
-
 #include "stdafx.h"
 #include "E-Debug.h"
 #include "MainWindow.h"   //载入窗口需要
@@ -57,7 +55,7 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 		strcpy(data, "0&打开分析窗口|1&关于软件");
 		return 1;
 	}
-	if (origin == PM_DISASM || PM_CPUDUMP) {
+	if (origin == PM_DISASM || origin == PM_CPUDUMP) {
 		strcpy(data, "0 易语言{0 取十六进制|1 到字节集}");
 		return 1;
 	}
@@ -95,8 +93,6 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		}
 		return;
 	}
-
-
 	HGLOBAL hClip;
 	t_dump* DumpData;
 	if (origin == PM_DISASM) {

@@ -62,7 +62,7 @@ BOOL CMainWindow::OnInitDialog() {
 
 	m_Tab.InsertItem(0, _T("支持库命令"));
 	m_Tab.InsertItem(1, _T("API命令"));
-	m_Tab.InsertItem(2, _T("窗口组件"));
+	//m_Tab.InsertItem(2, _T("窗口组件"));
 
 	CRect rc;
 	m_Tab.GetClientRect(&rc);

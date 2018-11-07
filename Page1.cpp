@@ -357,7 +357,7 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊıÒ»ÎªĞéÄâµØÖ·,²ÎÊı¶
 				pSrc++;
 				continue;
 			}
-			pMaindlg->outputInfo("Ê§°ÜµØÖ·:%X", pEAnalysisEngine->V2O((DWORD)pSrc, 0));
+			//pMaindlg->outputInfo("Ê§°ÜµØÖ·:%X", pEAnalysisEngine->V2O((DWORD)pSrc, 0));
 			
 			//pMaindlg->outputInfo("Ê§°ÜÎÄ:%X", FuncSrc);
 			return false;
