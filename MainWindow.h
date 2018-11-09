@@ -34,7 +34,9 @@ public:
 
 	double promile=0;
 
-	
+	map<string, string> m_temp;
+	map<string, string> m_basic;
+
 	afx_msg void OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult);
 	CListBox m_output;
 	afx_msg void OnLbnSelchangeLog();

@@ -93,8 +93,7 @@ BOOL CPage1::OnInitDialog() {
 	}
 
 	Currentindex = r_index;
-
-
+	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
 	for (int i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
 	{
 		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
@@ -122,16 +121,13 @@ BOOL CPage1::OnInitDialog() {
 		strcat_s(szDirectory, "\\Plugin\\Esig\\");strcat_s(szDirectory, (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index));
 		strcat_s(szDirectory, szLibVer);strcat_s(szDirectory, ".Esig");
 
-		m_Func.clear();
-		m_subFunc.clear();
 
-		BOOL Sret = ReadSig(szDirectory);    //读取ESig文件
+		BOOL Sret = ReadSig(szDirectory,m_subFunc,m_Func);    //读取ESig文件
 		LIBMAP m_Libmap;
 
 		m_Libmap.Command_addr.clear();
 		m_Libmap.Command_name.clear();
 
-		
 		if (Sret == false) {    //如果读取不到Sig文件
 			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
@@ -166,21 +162,66 @@ BOOL CPage1::OnInitDialog() {
 			}
 		}
 
-
 		m_map[nPos] = m_Libmap;
 		m_lib.InsertItem(nPos, str);nPos++;
 		m_lib.InsertItem(nPos, L"――――――――――――――――――――――――"); nPos++;
 
-		Progress(pMaindlg->promile = pMaindlg->promile + 100, "正在识别支持库...");
+		Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "正在识别支持库...");
 		pFirst += sizeof(DWORD);
 	}
 	
-	Progress(1000, "正在识别支持库命令...");
+	//———扫描基础特征码———
+	char szDirectory[MAX_PATH] = {};
+	StrCpyA(szDirectory, DIRECTORY);
+	strcat_s(szDirectory, "\\Plugin\\Esig\\Emain.Esig");
+	map<string, string> m_temp;
+	map<string, string> m_basic;
+	ReadSig(szDirectory, m_temp, m_basic);//获得Emain.Esig函数特征
+	ProgressAdd = 300 / m_basic.size();
+	for (ULONG dwAddress = pEAnalysisEngine->dwUsercodeStart;dwAddress < pEAnalysisEngine->dwUsercodeEnd;dwAddress++) {
+		ULONG FuncSrc = pEAnalysisEngine->O2V(dwAddress, 0);
+		map<string, string>::iterator it;
+		for (it = m_basic.begin();it != m_basic.end();it++) {
+			if (MatchCode_fast((UCHAR*)FuncSrc, it->second)) {
+				Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "正在扫描基础特征,请等待......");
+				Insertname(dwAddress, NM_LABEL, (char*)it->first.c_str());
+				dwAddress = dwAddress - 1 + (it->second.length() / 2);
+				m_basic.erase(it);
+				break;
+			}
+		}
+	}
+
+	Progress(1000, "正在扫描基础特征,请等待......");
 	Progress(0, "");
-	Infoline("识别支持库命令完毕...");
+	Infoline("识别命令完毕...");
 	
 	pMaindlg->outputInfo("->  分析易语言<KrnlLibCmd>&&<LibCmd>完毕...");
 	return true;
+}
+
+BOOL CPage1::MatchCode_fast(UCHAR* FuncSrc, string& FuncTxt)  //参数一为虚拟地址,参数二为函数文本,快速模式
+{
+	for (int n = 0;n < FuncTxt.length();n++) {
+		if (FuncTxt[n] == '?')   //模糊匹配
+		{
+			n++;
+			FuncSrc++;
+			continue;
+		}
+		else     //普通代码
+		{
+			INT ByteCode = 0;
+			StrToIntExA(("0x" + FuncTxt.substr(n, 2)).c_str(), 1, &ByteCode);
+			if (*FuncSrc == (UCHAR)ByteCode) {
+				n++;
+				FuncSrc++;
+				continue;
+			}
+			return false;
+		}
+	}
+	return TRUE;
 }
 
 BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //参数一为虚拟地址,参数二为函数文本
@@ -410,66 +451,7 @@ bool CPage1::MatchCode_UnEx(unsigned char* pSrc1, unsigned char* pSrc2, int nLen
 	}
 }
 
-BOOL CPage1::ReadSig(const char *lpMapPath)
-{
-	HANDLE hFile = CreateFileA(lpMapPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		return false;
-	}
-	DWORD	dwHitSize = 0;
-	DWORD	dwSize = GetFileSize(hFile, &dwHitSize);
-	DWORD	dwReadSize;
 
-	char* pMap = (char*)malloc(dwSize);
-	ReadFile(hFile, pMap, dwSize, &dwReadSize, NULL);
-	string Sig = pMap;
-	
-	int delimiter = Sig.find("******");   //分界符
-	if (delimiter == -1) {
-		return false;
-	}
-	string SubFunc = Sig.substr(0, delimiter);
-	
-	int pos = SubFunc.find_first_of("\r\n");     //子函数
-	while (pos != -1) {
-		string temp = SubFunc.substr(0, pos);  //单个子函数
-		int tempos = temp.find(':');
-		if (tempos == -1) {
-			break;
-		}
-		m_subFunc[temp.substr(0, tempos)] = temp.substr(tempos + 1);
-		SubFunc = SubFunc.substr(pos + 2);
-		pos = SubFunc.find("\r\n");
-	}
-
-	/*map<string, string>::iterator it = m_subFunc.begin();
-	while (it != m_subFunc.end()) {
-		pMaindlg->outputInfo("%s:%s", (char*)it->first.c_str(),(char*)it->second.c_str());
-		it++;
-	}*/
-
-	string Func = Sig.substr(delimiter+8);    //全部函数文本
-	pos = Func.find("\r\n");
-
-	while (pos != -1) {
-		string temp = Func.substr(0, pos);    //单个子函数
-		int tempos = temp.find(':');
-		if (tempos == -1) {
-			break;
-		}
-		m_Func[temp.substr(0, tempos)] = temp.substr(tempos + 1);
-		Func = Func.substr(pos + 2);
-		pos = Func.find("\r\n");
-	}
-
-	if (pMap) {
-		free(pMap);
-	}
-
-	CloseHandle(hFile);
-	return TRUE;
-}
 
 void CPage1::OnNMClickListlib(NMHDR *pNMHDR, LRESULT *pResult)
 {

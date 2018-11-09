@@ -121,11 +121,12 @@ BOOL CMainWindow::OnInitDialog() {
 			Insertname(dwPoint, NM_LABEL, (char*)krnlCmd[i].c_str());
 		}
 
-
-		//To do Here,É¨Ãè»ù´¡ÌØÕ÷Âë
+		m_page1.Create(IDD_PAGE1, &m_Tab);
+		m_page1.MoveWindow(&rc);
 
 		m_page2.Create(IDD_PAGE2, &m_Tab);
 		m_page2.MoveWindow(&rc);
+
 	}
 
 	else {
@@ -133,15 +134,8 @@ BOOL CMainWindow::OnInitDialog() {
 		return true;
 	}
 
-	m_page1.Create(IDD_PAGE1, &m_Tab);
-	m_page1.MoveWindow(&rc);
-
-	
-
-
 	/*m_page3.Create(IDD_PAGE3, &m_Tab);
 	m_page3.MoveWindow(&rc);*/
-
 
 	m_page1.ShowWindow(true);
 
@@ -216,9 +210,8 @@ void CMainWindow::OnLbnSelchangeLog()
 	}
 }
 
-void ScanCode(byte* pSrc,byte* pTrait,int nStrlen,int nTraitlen ) {
-	Search_Bin(pSrc,pTrait,nStrlen,nTraitlen);
-}
+
+
 
 void CMainWindow::OnClose()
 {

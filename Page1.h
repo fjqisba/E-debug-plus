@@ -38,8 +38,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
-	BOOL ReadSig(const char *lpMapPath);
 	bool MatchCode(unsigned char* pSrc1, unsigned char* pSrc2, int nLen);
+	BOOL MatchCode_fast(UCHAR* FuncSrc, string& FuncTxt);
 	bool MatchCode_UnEx(unsigned char* pSrc1, unsigned char* pSrc2, int nLen);//
 	CListCtrl m_lib;
 	CListCtrl m_command;
