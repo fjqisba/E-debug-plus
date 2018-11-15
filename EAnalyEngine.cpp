@@ -23,14 +23,15 @@ UINT EAnalysis::AddSection(DWORD addr) {
 	}
 	
 	addsection.dwBase = (ULONG)MB.BaseAddress;
-	addsection.dwSize = (DWORD)MB.AllocationBase;
+	//addsection.dwSize = (DWORD)MB.AllocationBase;//两个不知道哪个好,暂时搁浅
+	addsection.dwSize = (DWORD)MB.RegionSize;
 
 	addsection.SectionAddr = (BYTE *)VirtualAlloc(NULL, addsection.dwSize, MEM_COMMIT, PAGE_READWRITE);
 	if (addsection.SectionAddr == NULL) {
 		pMaindlg->outputInfo("申请额外内存失败!");
 		return -1;
 	}
-
+	
 	Readmemory(addsection.SectionAddr, addsection.dwBase, addsection.dwSize, MM_RESILENT);
 	SectionMap.push_back(addsection);
 	return SectionMap.size()-1;

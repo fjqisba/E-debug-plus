@@ -120,23 +120,25 @@ BOOL CPage2::OnInitDialog() {
 	DWORD   dwCount = 0;   //已搜索字节数
 	DWORD   ORDER = 0;
 	
-	
 
 	while (true) {
+
 		DWORD offset = Search_Bin(pTmp, ComCall, dwSecSize, sizeof(ComCall));//得到偏移地址
 		if (offset == 0) {
 			break;
 		}
 		dwResult += offset;
 
-		DWORD CALLADDR = dwResult + 5 + 5 + *(DWORD*)(pEAnalysisEngine->O2V(dwResult + 6, 0));
-		if (*(DWORD*)pEAnalysisEngine->O2V(CALLADDR + 2, 0) != pEAnalysisEngine->DLLCALL) {
-			continue;
+		DWORD TEMP = (pEAnalysisEngine->O2V(dwResult + 6, 0));
+		if (IsBadReadPtr((DWORD*)TEMP, 4) == 0) {
+			DWORD CALLADDR = dwResult + 5 + 5 + *(DWORD*)TEMP;
+			CALLADDR = pEAnalysisEngine->O2V(CALLADDR + 2, 0);
+			if (IsBadReadPtr((DWORD*)CALLADDR, 4) == 0 && *(DWORD*)CALLADDR == pEAnalysisEngine->DLLCALL) {
+				ORDER = *(DWORD*)(pEAnalysisEngine->O2V(dwResult + 1, 0));
+				m_map[ORDER].push_back(dwResult);
+				Insertname(dwResult, NM_COMMENT, W2A(m_api.GetItemText(ORDER, 2)));
+			}
 		}
-		
-		ORDER = *(DWORD*)(pEAnalysisEngine->O2V(dwResult+1,0));
-		m_map[ORDER].push_back(dwResult);
-		Insertname(dwResult, NM_COMMENT, W2A(m_api.GetItemText(ORDER,2)));
 		dwResult += sizeof(ComCall);
 		pTmp += offset + sizeof(ComCall);
 		dwSecSize -= offset + sizeof(ComCall);
