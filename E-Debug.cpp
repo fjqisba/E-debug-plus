@@ -52,7 +52,7 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 	t_dump pd;
 	if (origin == PM_MAIN)
 	{
-		strcpy(data, "0&打开分析窗口|1&关于软件");
+		strcpy(data, "0&静态编译|1&扫描模式|2&关于软件 ");
 		return 1;
 	}
 	if (origin == PM_DISASM || origin == PM_CPUDUMP) {
@@ -65,34 +65,36 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 {
 	if (origin == PM_MAIN) {
-		switch (action) {
-		case 0:
-		{
-			if (Getcputhreadid() == 0) {
-				AfxMessageBox(L"未载入程序，请载入程序后，跳转到程序领空重试!");
-				Flash("未载入程序!");
-				break;
-			}
-			CMainWindow *pMainDlg = new CMainWindow;
-			pMainDlg->Create(IDD_MainWindow,NULL);
-			pMainDlg->ShowWindow(SW_SHOW);
-			break;
-		}
-		case 1:
-		{
+		if (action == 2) {
 			CString szInfo;
 			szInfo += "Plugin:E-Debug Plus\r\n";
-			szInfo += "Verion:1.0\r\n";
-			szInfo += "Bug:fjqisba@sohu.com\r\n";
+			szInfo += "Verion:1.01\r\n";
+			//szInfo += "Bug:fjqisba@sohu.com\r\n";
 			szInfo += " Thanks to Xjun";
 			MessageBox(NULL, szInfo, L"About", MB_ICONINFORMATION);
-			break;
+			return;
 		}
-		default:
-			break;
+		else if (action == 0)
+		{
+			AnalysisMode = StaticMode;
 		}
+		else if (action == 1) {
+			AnalysisMode = CMode;
+			return; //To Be Continued
+		}
+
+		if (Getcputhreadid() == 0) {
+			AfxMessageBox(L"未载入程序，请载入程序后，跳转到程序领空重试!");
+			Flash("未载入程序!");
+			return;
+		}
+		CMainWindow *pMainDlg = new CMainWindow;
+		pMainDlg->Create(IDD_MainWindow, NULL);
+		pMainDlg->ShowWindow(SW_SHOW);
 		return;
 	}
+
+	//————————
 	HGLOBAL hClip;
 	t_dump* DumpData;
 	if (origin == PM_DISASM) {

@@ -26,7 +26,7 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	CListCtrl m_api;
-	map <int, vector<DWORD>> m_map;
+	map <int, vector<DWORD>> m_map;//¼üÎªº¯ÊýÐòºÅ
 	
 //	afx_msg void OnNMRDblclkListapi(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnNMRClickListapi(NMHDR *pNMHDR, LRESULT *pResult);

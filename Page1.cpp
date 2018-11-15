@@ -48,6 +48,29 @@ BEGIN_MESSAGE_MAP(CPage1, CDialog)
 END_MESSAGE_MAP()
 
 
+void HexToBin(string& HexCode, UCHAR* BinCode) {
+	static UCHAR BinMap[256] = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,		//123456789
+		0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,	//ABCDEF
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,	//abcdef
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+	for (int n = 0;n < HexCode.length() / 2;n++) {
+		BinCode[n] = BinMap[HexCode[2 * n]] * 16 + BinMap[HexCode[2 * n + 1]];
+	}
+}
+
 // CPage1 ÏûÏ¢´¦Àí³ÌÐò
 BOOL CPage1::OnInitDialog() {
 	CDialog::OnInitDialog();
@@ -127,7 +150,6 @@ BOOL CPage1::OnInitDialog() {
 
 		m_Libmap.Command_addr.clear();
 		m_Libmap.Command_name.clear();
-
 		if (Sret == false) {    //Èç¹û¶ÁÈ¡²»µ½SigÎÄ¼þ
 			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
@@ -178,15 +200,19 @@ BOOL CPage1::OnInitDialog() {
 	map<string, string> m_basic;
 	ReadSig(szDirectory, m_temp, m_basic);//»ñµÃEmain.Esigº¯ÊýÌØÕ÷
 	ProgressAdd = 300 / m_basic.size();
-	for (ULONG dwAddress = pEAnalysisEngine->dwUsercodeStart;dwAddress < pEAnalysisEngine->dwUsercodeEnd;dwAddress++) {
-		ULONG FuncSrc = pEAnalysisEngine->O2V(dwAddress, 0);
-		map<string, string>::iterator it;
-		for (it = m_basic.begin();it != m_basic.end();it++) {
-			if (MatchCode_fast((UCHAR*)FuncSrc, it->second)) {
+
+	map<string, string>::iterator it;
+	DWORD StartAddr = pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0);
+	DWORD EndAddr = StartAddr + pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart;
+	
+	for (it = m_basic.begin();it != m_basic.end();it++) {
+		UCHAR BinCode[1024] = { 0 };
+		HexToBin(it->second, BinCode);
+		for (ULONG dwAddress = StartAddr;dwAddress < EndAddr;dwAddress++) {
+			if (MatchCode_FAST((UCHAR*)dwAddress,BinCode,it->second.length()/2)) {
 				Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "ÕýÔÚÉ¨Ãè»ù´¡ÌØÕ÷,ÇëµÈ´ý......");
 				Insertname(dwAddress, NM_LABEL, (char*)it->first.c_str());
 				dwAddress = dwAddress - 1 + (it->second.length() / 2);
-				m_basic.erase(it);
 				break;
 			}
 		}
@@ -200,26 +226,24 @@ BOOL CPage1::OnInitDialog() {
 	return true;
 }
 
-BOOL CPage1::MatchCode_fast(UCHAR* FuncSrc, string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶þÎªº¯ÊýÎÄ±¾,¿ìËÙÄ£Ê½
+BOOL CPage1::IsValidAddr(ULONG addr) { //±¸ÓÃ
+	if (addr > pEAnalysisEngine->SectionMap[0].dwBase + pEAnalysisEngine->SectionMap[0].dwSize || addr < pEAnalysisEngine->SectionMap[0].dwBase) {
+		return false;
+	}
+	return true;
+}
+
+
+BOOL CPage1::MatchCode_FAST(UCHAR* FuncSrc, UCHAR* BinCode, int nLen)  //²ÎÊýÒ»Óë²ÎÊý¶þ¶Ô±È,²ÎÊýÈýÎª¶Ô±È³¤¶È
 {
-	for (int n = 0;n < FuncTxt.length();n++) {
-		if (FuncTxt[n] == '?')   //Ä£ºýÆ¥Åä
-		{
-			n++;
-			FuncSrc++;
-			continue;
-		}
-		else     //ÆÕÍ¨´úÂë
-		{
-			INT ByteCode = 0;
-			StrToIntExA(("0x" + FuncTxt.substr(n, 2)).c_str(), 1, &ByteCode);
-			if (*FuncSrc == (UCHAR)ByteCode) {
-				n++;
-				FuncSrc++;
-				continue;
-			}
-			return false;
-		}
+	if (nLen == 0)
+	{
+		return FALSE;
+	}
+	for (int i = 0; i < nLen; i++)
+	{
+		if (FuncSrc[i] != BinCode[i])
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -234,17 +258,19 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 			if (*pSrc != 0xE9) {
 				return false;
 			}
+
 			DWORD offset = *(DWORD*)(pSrc + 1);
 			pSrc = pSrc + offset + 5;
 			if (IsBadReadPtr(pSrc, 4) != 0) {
 				return false;
 			}
+
 			n = n + 2;
 			continue;
 		}
-		else if(FuncTxt[n]=='<' && FuncTxt[n+1]=='[')  //FF15 CALL
+		else if (FuncTxt[n] == '<' && FuncTxt[n + 1] == '[')  //FF15 CALL
 		{
-			if (*pSrc != 0xFF || *(pSrc+1) != 0x15) {      //º¬ÓÐVMPºÍSE´úÂë
+			if (*pSrc != 0xFF || *(pSrc + 1) != 0x15 || IsBadReadPtr((ULONG*)(pSrc + 2), 4) != 0) {      //º¬ÓÐVMPºÍSE´úÂë
 				return false;
 			}
 
@@ -252,11 +278,8 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 			if (post == -1) {
 				return false;
 			}
-			string IATEAT = FuncTxt.substr(n + 2, post - n - 2);   //µÃµ½ÎÄ±¾ÖÐµÄIATº¯Êý
 
-			if (IsBadReadPtr((ULONG*)(pSrc + 2), 4) != 0) {     //VMPºÍSE Òì³£´¦Àí
-				return false;
-			}
+			string IATEAT = FuncTxt.substr(n + 2, post - n - 2);   //µÃµ½ÎÄ±¾ÖÐµÄIATº¯Êý
 
 			CString IATCom;
 			CString EATCom;
@@ -264,28 +287,28 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 			int EATpos = IATEAT.find("||");
 			if (EATpos != -1) {            //´æÔÚ×Ô¶¨ÒåEAT
 				IATCom = IATEAT.substr(0, EATpos).c_str();
-				EATCom = IATEAT.substr(EATpos+2).c_str();
+				EATCom = IATEAT.substr(EATpos + 2).c_str();
 			}
 			else
 			{
 				IATCom = IATEAT.c_str();
-				EATCom = IATEAT.substr(IATEAT.find('.')+1).c_str();
+				EATCom = IATEAT.substr(IATEAT.find('.') + 1).c_str();
 			}
-			
+
 			ULONG addr = *(ULONG*)(pSrc + 2);
 			if (Findname(addr, NM_IMPORT, buffer) != 0 && IATCom.CompareNoCase(A2W(buffer)) == 0) {  //Ê×ÏÈIATÆ¥Åä
 				pSrc = pSrc + 6;
 				n = post + 1;
 				continue;
 			}
-			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, Currentindex), NM_EXPORT, buffer) != 0 && EATCom.CompareNoCase(A2W(buffer))==0) {      //EATÆ¥Åä
+			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, Currentindex), NM_EXPORT, buffer) != 0 && EATCom.CompareNoCase(A2W(buffer)) == 0) {      //EATÆ¥Åä
 				pSrc = pSrc + 6;
 				n = post + 1;
 				continue;
 			}
 			return false;
 		}
-		else if(FuncTxt[n]=='<')    //ÆÕÍ¨CALL
+		else if (FuncTxt[n] == '<')    //ÆÕÍ¨CALL
 		{
 			if (*pSrc != 0xE8) {   //±ØÐëÅÐ¶Ï
 				return false;
@@ -303,6 +326,9 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 				n = post;
 				continue;
 			}
+			if (IsBadReadPtr((ULONG*)addr, 4) != 0) {
+				return false;
+			}
 			if (MatchCode((UCHAR*)addr, m_subFunc[SubFunc])) {
 				pSrc = pSrc + 5;
 				n = post;
@@ -311,7 +337,7 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 			}
 			return false;
 		}
-		else if(FuncTxt[n] == '[' && FuncTxt[n+1]==']' && FuncTxt[n+2]=='>' )   //FF25º¯ÊýÌø×ª
+		else if (FuncTxt[n] == '[' && FuncTxt[n + 1] == ']' && FuncTxt[n + 2] == '>')   //FF25º¯ÊýÌø×ª
 		{
 			if (*pSrc != 0xFF || *(pSrc + 1) != 0x25) {
 				return false;
@@ -329,18 +355,18 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 				return false;
 			}
 
-			r_index= pEAnalysisEngine->FindSection(jmpaddr);
+			r_index = pEAnalysisEngine->FindSection(jmpaddr);
 			if (r_index == -1) {
 				r_index = pEAnalysisEngine->AddSection(jmpaddr);
 			}
 			Currentindex = r_index;
 
-			pSrc = (UCHAR*)pEAnalysisEngine->O2V(jmpaddr,Currentindex); //º¯ÊýÕæÊµµØÖ·×ª»»ÎªÐéÄâµØÖ·
+			pSrc = (UCHAR*)pEAnalysisEngine->O2V(jmpaddr, Currentindex); //º¯ÊýÕæÊµµØÖ·×ª»»ÎªÐéÄâµØÖ·
 
 			n = n + 2;
 			continue;
 		}
-		else if(FuncTxt[n]=='[')  //FF25 IATÌø×ª
+		else if (FuncTxt[n] == '[')  //FF25 IATÌø×ª
 		{
 			if (*pSrc != 0xFF || *(pSrc + 1) != 0x25) {
 				return false;
@@ -377,13 +403,13 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 				continue;
 			}
 			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, Currentindex), NM_EXPORT, buffer) != 0 && EATCom.CompareNoCase(A2W(buffer)) == 0) {      //EATÆ¥Åä
-					pSrc = pSrc + 6;
-					n = post;
-					continue;
-				}
+				pSrc = pSrc + 6;
+				n = post;
+				continue;
+			}
 			return false;
 		}
-		else if(FuncTxt[n]=='?')   //Ä£ºýÆ¥Åä
+		else if (FuncTxt[n] == '?')   //Ä£ºýÆ¥Åä
 		{
 			n++;
 			pSrc++;
@@ -391,35 +417,20 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊýÒ»ÎªÐéÄâµØÖ·,²ÎÊý¶
 		}
 		else     //ÆÕÍ¨´úÂë
 		{
-			INT ByteCode = 0;
-			StrToIntExA(("0x"+FuncTxt.substr(n, 2)).c_str(), 1,&ByteCode);
-			if (*pSrc == (UCHAR)ByteCode) {
+			UCHAR ByteCode=0;
+			HexToBin(FuncTxt.substr(n, 2), &ByteCode);
+			if (*pSrc == ByteCode) {
 				n++;
 				pSrc++;
 				continue;
 			}
 			//pMaindlg->outputInfo("Ê§°ÜµØÖ·:%X", pEAnalysisEngine->V2O((DWORD)pSrc, 0));
-			
+
 			//pMaindlg->outputInfo("Ê§°ÜÎÄ:%X", FuncSrc);
 			return false;
 		}
 	}
-	return TRUE;
-}
 
-bool CPage1::MatchCode(unsigned char* pSrc1, unsigned char* pSrc2, int nLen)
-{
-	if (nLen == 0)
-	{
-		return FALSE;
-	}
-	for (int i = 0; i < nLen; i++)
-	{
-		if (pSrc2[i] == 0x90)//Ä£ºýÆ¥Åä
-			continue;
-		if (pSrc1[i] != pSrc2[i])
-			return FALSE;
-	}
 	return TRUE;
 }
 

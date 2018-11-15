@@ -38,8 +38,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
-	bool MatchCode(unsigned char* pSrc1, unsigned char* pSrc2, int nLen);
-	BOOL MatchCode_fast(UCHAR* FuncSrc, string& FuncTxt);
+	BOOL MatchCode_FAST(UCHAR* FuncSrc, UCHAR* BinCode, int length);  //参数一与参数二对比,参数三为对比长度
 	bool MatchCode_UnEx(unsigned char* pSrc1, unsigned char* pSrc2, int nLen);//
 	CListCtrl m_lib;
 	CListCtrl m_command;
@@ -58,6 +57,8 @@ public:
 
 	map<ULONG, string> m_RFunc;  //R代表Runtime
 
-	BOOL CPage1::MatchCode(UCHAR* FuncAddr, string& FuncTxt);//函数地址与函数文本相匹配
+	BOOL IsValidAddr(ULONG addr);
+
+	BOOL MatchCode(UCHAR* FuncAddr, string& FuncTxt);//函数地址与函数文本相匹配
 
 };

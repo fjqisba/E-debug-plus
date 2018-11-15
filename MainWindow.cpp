@@ -15,6 +15,7 @@
 #include "EAnalyEngine.h"
 
 extern HINSTANCE g_hInstace;
+UINT AnalysisMode;
 
 CMainWindow *pMaindlg;
 EAnalysis	*pEAnalysisEngine;
@@ -60,10 +61,6 @@ BOOL CMainWindow::OnInitDialog() {
 	SetIcon(hIcon, FALSE);
 	SetIcon(hIcon, TRUE);
 
-	m_Tab.InsertItem(0, _T("支持库命令"));
-	m_Tab.InsertItem(1, _T("API命令"));
-	//m_Tab.InsertItem(2, _T("窗口组件"));
-
 	CRect rc;
 	m_Tab.GetClientRect(&rc);
 	rc.top += 26;
@@ -71,17 +68,21 @@ BOOL CMainWindow::OnInitDialog() {
 	rc.right -= 6;
 	rc.bottom -= 6;
 
-
 	ULONG uBase, uSize;
 	INT nPos;
 	Getdisassemblerrange(&uBase, &uSize);
-
 	outputInfo("->开始分析当前区段....  分析地址: % 08X  内存大小: % 08X", uBase, uSize);
-	
-	pEAnalysisEngine = new EAnalysis(uBase,uSize);   //初始化内存
-	if (pEAnalysisEngine->EStaticLibInit()) {    //易语言静态编译识别+初始化,识别失败返回false
-		
-		std::vector<std::string> krnlCmd =
+
+	pEAnalysisEngine = new EAnalysis(uBase);   //初始化内存
+
+	if (AnalysisMode == StaticMode) {    //静态编译程序
+		m_Tab.InsertItem(0, _T("支持库命令"));
+		m_Tab.InsertItem(1, _T("API命令"));
+		if (!pEAnalysisEngine->EStaticLibInit()) {
+			outputInfo("%s", "该程序可能不是易语言静态编译程序!");
+			return true;
+		}
+		vector<string> krnlCmd =
 		{ "错误回调", "DLL命令", "三方支持库命令", "核心支持库命令",
 			"读取组件属性", "设置组件属性", "分配内存", "重新分配内存",
 			"释放内存", "结束", "窗口消息循环", "载入启动窗口", "初始化" };
@@ -91,7 +92,7 @@ BOOL CMainWindow::OnInitDialog() {
 		Insertname(pEAnalysisEngine->dwUsercodeStart, NM_COMMENT, "用户代码段开始");
 
 		if (!pEAnalysisEngine->GetUserEntryPoint()) {
-			pEAnalysisEngine->dwUsercodeEnd = uBase + uSize -1;
+			pEAnalysisEngine->dwUsercodeEnd = uBase + uSize - 1;
 			nPos = outputInfo("->  用户自写代码段结束 : %08X     ", pEAnalysisEngine->dwUsercodeEnd);
 		}
 		else {
@@ -111,13 +112,16 @@ BOOL CMainWindow::OnInitDialog() {
 		if (index == -1) {           //区段有可能被切割,加入新的区段
 			index = pEAnalysisEngine->AddSection(dwKrnlEntry);
 		}
-	
+
 		int proadd = 100 / krnlCmd.size();
 		for (int i = krnlCmd.size() - 1; i >= 0; i--)
 		{
 			Progress(promile = promile + proadd, "正在识别核心支持库命令");
 			dwKrnlEntry -= sizeof(DWORD);
-			dwPoint = pEAnalysisEngine->GetPoint(pEAnalysisEngine->O2V(dwKrnlEntry,index));
+			dwPoint = pEAnalysisEngine->GetPoint(pEAnalysisEngine->O2V(dwKrnlEntry, index));
+			if (i == 1) {  //获取DLL命令调用地址
+				pEAnalysisEngine->DLLCALL = dwKrnlEntry;
+			}
 			Insertname(dwPoint, NM_LABEL, (char*)krnlCmd[i].c_str());
 		}
 
@@ -128,18 +132,12 @@ BOOL CMainWindow::OnInitDialog() {
 		m_page2.MoveWindow(&rc);
 
 	}
-
-	else {
-		outputInfo("->  该程序有可能不是易语言程序...");
-		return true;
+	else if (AnalysisMode == CMode)
+	{
+		m_page1.Create(IDD_PAGE1, &m_Tab);
+		m_page1.MoveWindow(&rc);
 	}
-
-	/*m_page3.Create(IDD_PAGE3, &m_Tab);
-	m_page3.MoveWindow(&rc);*/
-
 	m_page1.ShowWindow(true);
-
-	return true;
 }
 
 void CMainWindow::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)

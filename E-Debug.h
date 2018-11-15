@@ -4,6 +4,10 @@
 
 #pragma once
 
+#define StaticMode 0  //静态编译模式
+#define NormalMode 1  //编译或独立编译模式
+#define CMode      2  //黑月编译，属于C语言模式
+
 #ifndef __AFXWIN_H__
 	#error "在包含此文件之前包含“stdafx.h”以生成 PCH 文件"
 #endif
@@ -11,7 +15,7 @@
 #include "resource.h"		// 主符号
 
 extern char DIRECTORY[MAX_PATH];  //定义全局变量,插件目录
-
+extern UINT AnalysisMode;
 // CEDebugApp
 // 有关此类实现的信息，请参阅 E-Debug.cpp
 //

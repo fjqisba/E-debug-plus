@@ -111,7 +111,8 @@ BOOL CPage2::OnInitDialog() {
 		pszApinameAddr += 4;
 	}
 
-	byte ComCall[15] = { 0xB8, 0x90, 0x90, 0x00, 0x00 ,0xE8,0x90,0x90,0x90,0x90,0x39,0x65,0x90,0x74,0x90 };
+	
+	byte ComCall[6] = { 0xB8, 0x90, 0x90, 0x00, 0x00 ,0xE8 };
 	byte *pTmp = (byte*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart,0);
 
 	DWORD	dwSecSize = pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart;
@@ -119,11 +120,20 @@ BOOL CPage2::OnInitDialog() {
 	DWORD   dwCount = 0;   //已搜索字节数
 	DWORD   ORDER = 0;
 	
+	
+
 	while (true) {
 		DWORD offset = Search_Bin(pTmp, ComCall, dwSecSize, sizeof(ComCall));//得到偏移地址
-		if (offset == 0)
+		if (offset == 0) {
 			break;
+		}
 		dwResult += offset;
+
+		DWORD CALLADDR = dwResult + 5 + 5 + *(DWORD*)(pEAnalysisEngine->O2V(dwResult + 6, 0));
+		if (*(DWORD*)pEAnalysisEngine->O2V(CALLADDR + 2, 0) != pEAnalysisEngine->DLLCALL) {
+			continue;
+		}
+		
 		ORDER = *(DWORD*)(pEAnalysisEngine->O2V(dwResult+1,0));
 		m_map[ORDER].push_back(dwResult);
 		Insertname(dwResult, NM_COMMENT, W2A(m_api.GetItemText(ORDER,2)));
@@ -139,7 +149,7 @@ BOOL CPage2::OnInitDialog() {
 	}
 
 	pMaindlg->outputInfo("->  获取易语言<DllCmd>完毕...");
-	pMaindlg->outputInfo("->  Bug反馈: https://github.com/fjqisba/E-debug-plus");
+	//pMaindlg->outputInfo("->  Bug反馈: https://github.com/fjqisba/E-debug-plus");
 	return true;
 }
 

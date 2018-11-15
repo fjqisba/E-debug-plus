@@ -125,7 +125,7 @@ typedef struct _ENTRYINFO // 易语言入口信息
 class EAnalysis
 {
 public:
-	EAnalysis(ULONG dwVBase, ULONG dwVsize);
+	EAnalysis(ULONG dwVBase);
 	~EAnalysis();
 	
 	BOOL EStaticLibInit();     //静态编译--初始化
@@ -145,6 +145,9 @@ public:
 	DWORD dwUsercodeEnd;   //用户代码的结束地址
 
 	vector<sectionAlloc> SectionMap;    //维护一份内存拷贝表
+
+	ULONG DLLCALL=0; //保存DLL_CALL地址,在查找DLL命令的时候会用到
+
 
 	PEENTRYINFO pEnteyInfo; // entry info
 private:

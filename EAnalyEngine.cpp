@@ -36,7 +36,7 @@ UINT EAnalysis::AddSection(DWORD addr) {
 	return SectionMap.size()-1;
 }
 
-EAnalysis::EAnalysis(ULONG dwVBase,ULONG dwVsize)
+EAnalysis::EAnalysis(ULONG dwVBase)
 {
 	AddSection(dwVBase);
 }
