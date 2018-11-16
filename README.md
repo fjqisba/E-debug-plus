@@ -28,9 +28,8 @@ E-debug Plus对于函数的匹配要求相当严格,一个字节出错也会匹�
 将插件与Esig文件夹放置于OD目录下
 
 OD\plugin\E-debug.dll
-OD\plugin\Esig
 
-即可
+OD\plugin\Esig即可
 
 未加壳的程序,在text区段可直接分析.
 加壳的程序,可待text区段解码后，CPU窗口到达text区段再开始分析.
