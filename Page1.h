@@ -1,11 +1,6 @@
 #pragma once
-#include "afxcmn.h"
-#include "stdafx.h"
 
-#include <string>
-#include <map>
-
-using namespace std;
+#include "E-Debug.h"
 
 typedef struct LIBMAP
 {

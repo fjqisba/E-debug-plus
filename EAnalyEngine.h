@@ -1,43 +1,6 @@
-#include "stdafx.h"
-
 #pragma once
 
-static DWORD Search_Bin(byte *pSrc, byte *pTrait, int nSrcLen, int nTraitLen) //低配版二进制搜索,用0x90来代替模糊搜索,返回偏移大小
-{
-	if (IsBadReadPtr(pSrc, 4) == TRUE)
-	{
-		return 0;
-	}
-	int i, j, k;
-	for (i = 0; i <= (nSrcLen - nTraitLen); i++)
-	{
-		if (pSrc[i] == pTrait[0])
-		{
-			k = i;
-			j = 0;
-			while (j < nTraitLen)
-			{
-				k++; j++;
-				if (pTrait[j] == 0x90)
-				{
-					continue;
-				}
-				if (pSrc[k] != pTrait[j])
-				{
-					break;
-				}
-			}
-
-			if (j == nTraitLen)
-			{
-				return i;
-			}
-
-		}
-
-	}
-	return 0;
-}
+#include "E-Debug.h"
 
 static BOOL ReadSig(const char *lpMapPath, map<string, string>& m_subFunc, map<string, string>& m_Func)		//参数一为路径,参数二为返回的子函数特征文本,参数三为返回的函数特征文本
 {
@@ -96,7 +59,7 @@ static BOOL ReadSig(const char *lpMapPath, map<string, string>& m_subFunc, map<s
 	return TRUE;
 }
 
-typedef struct sectionAlloc
+typedef struct sectionAlloc		//内存拷贝
 {
 	BYTE* SectionAddr;  //申请的内存空间地址
 	DWORD dwBase;       //原始代码区段的基址
@@ -135,8 +98,8 @@ public:
 	UINT AddSection(DWORD addr);  //内存拷贝表中增加区段,返回新的index
 
 	DWORD   Search_BinEx(byte *pSrc, byte *pTrait, int nSrcLen, int nTraitLen);
-	DWORD	O2V(DWORD dwVaddr, UINT index);//origin addr to virtual addr
-	DWORD	V2O(DWORD dwOaddr, UINT index);
+	DWORD	O2V(DWORD dwVaddr, UINT index);		//原始地址转换为虚拟地址
+	DWORD	V2O(DWORD dwOaddr, UINT index);		//虚拟地址转换为原始地址
 
 
 	DWORD	GetPoint(DWORD dwAddr);
@@ -146,7 +109,7 @@ public:
 
 	vector<sectionAlloc> SectionMap;    //维护一份内存拷贝表
 
-	ULONG DLLCALL=0; //保存DLL_CALL地址,在查找DLL命令的时候会用到
+	ULONG DLLCALL=0;		//保存DLL_CALL地址,在查找DLL命令的时候会用到
 
 
 	PEENTRYINFO pEnteyInfo; // entry info

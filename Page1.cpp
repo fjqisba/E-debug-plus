@@ -1,16 +1,15 @@
-// Page1.cpp : 实现文件
-//
+/*————————————————————————————
+E-debug   命令识别
+————————————————————————————*/
 
 #include "stdafx.h"
 #include "E-Debug.h"
-#include "afxdialogex.h"
 #include "Page1.h"
 #include "EAnalyEngine.h"
 #include "Elib.h"
 #include "MainWindow.h"
-#include <vector>
 
-// CPage1 对话框
+
 extern  EAnalysis	*pEAnalysisEngine;
 extern 	CMainWindow *pMaindlg;
 
@@ -47,29 +46,6 @@ BEGIN_MESSAGE_MAP(CPage1, CDialog)
 	ON_COMMAND(ID_32771, &CPage1::On32771)
 END_MESSAGE_MAP()
 
-
-void HexToBin(string& HexCode, UCHAR* BinCode) {
-	static UCHAR BinMap[256] = {
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,		//123456789
-		0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,	//ABCDEF
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,10,11,12,13,14,15,0,0,0,0,0,0,0,0,0,	//abcdef
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-	for (int n = 0;n < HexCode.length() / 2;n++) {
-		BinCode[n] = BinMap[HexCode[2 * n]] * 16 + BinMap[HexCode[2 * n + 1]];
-	}
-}
 
 // CPage1 消息处理程序
 BOOL CPage1::OnInitDialog() {
@@ -117,7 +93,7 @@ BOOL CPage1::OnInitDialog() {
 
 	Currentindex = r_index;
 	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
-	for (int i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
+	for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
 	{
 		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
 		strLib.Format(L"---->%s (Ver:%1d.%1d)",
@@ -200,7 +176,7 @@ BOOL CPage1::OnInitDialog() {
 	map<string, string> m_basic;
 	ReadSig(szDirectory, m_temp, m_basic);//获得Emain.Esig函数特征
 	ProgressAdd = 300 / m_basic.size();
-
+	
 	map<string, string>::iterator it;
 	DWORD StartAddr = pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0);
 	DWORD EndAddr = StartAddr + pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart;
@@ -211,7 +187,7 @@ BOOL CPage1::OnInitDialog() {
 		for (ULONG dwAddress = StartAddr;dwAddress < EndAddr;dwAddress++) {
 			if (MatchCode_FAST((UCHAR*)dwAddress,BinCode,it->second.length()/2)) {
 				Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "正在扫描基础特征,请等待......");
-				Insertname(dwAddress, NM_LABEL, (char*)it->first.c_str());
+				Insertname(pEAnalysisEngine->V2O(dwAddress,0), NM_LABEL, (char*)it->first.c_str());
 				dwAddress = dwAddress - 1 + (it->second.length() / 2);
 				break;
 			}

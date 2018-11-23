@@ -1,7 +1,6 @@
 #pragma once
-#include "stdafx.h"
+#include "E-Debug.h"
 
-using namespace std;
 // CPage3 对话框
 typedef struct WindowInfo    //窗体信息的内存空间分布
 {

@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "E-Debug.h"
 #include "Page3.h"
-#include "afxdialogex.h"
 #include "MainWindow.h"
 #include "EAnalyEngine.h"
 
@@ -171,7 +170,7 @@ BOOL CPage3::OnInitDialog() {
 	CString ControlID;
 
 	
-	for (int i = 0;i < m_WindowInfo.WindowCount;i++) {
+	for (UINT i = 0;i < m_WindowInfo.WindowCount;i++) {
 		EipAddr = EipAddr + 4;
 		WinID.Format(L"0x%X", *(DWORD*)(pEAnalysisEngine->O2V(EipAddr,r_index)));
 		HTREEITEM temp = m_Tree.InsertItem(WinID, hroot);
@@ -190,7 +189,7 @@ BOOL CPage3::OnInitDialog() {
 	DWORD NextWindowProery = EipAddr + 24; //窗口起始地址
 
 
-	for (int i = 0;i < m_WindowInfo.WindowCount;i++) {      //解析窗口
+	for (UINT i = 0;i < m_WindowInfo.WindowCount;i++) {      //解析窗口
 		Window.push_back(m_WindowPropery);
 		EipAddr = EipAddr + 16;
 
@@ -204,13 +203,13 @@ BOOL CPage3::OnInitDialog() {
 		Window[i].ControlSize= *(unsigned long*)pEAnalysisEngine->O2V(EipAddr,r_index);   //得到控件总大小
 		
 		
-		for (int j = 0;j < Window[i].ControlCount;j++) {
+		for (UINT j = 0;j < Window[i].ControlCount;j++) {
 			EipAddr = EipAddr + 4;
 			ControlID.Format(L"0x%X", *(unsigned long*)pEAnalysisEngine->O2V(EipAddr, r_index));
 			Window[i].ControlID.push_back(m_Tree.InsertItem(ControlID,m_WindowInfo.WindowId[i])); //保存控件ID
 		}
 		
-		for (int t = 0;t < Window[i].ControlCount;t++) {          //解析控件
+		for (UINT t = 0;t < Window[i].ControlCount;t++) {          //解析控件
 			EipAddr = EipAddr + 4;
 			Window[i].Controloffset.push_back(*(unsigned long*)pEAnalysisEngine->O2V(EipAddr, r_index));
 			
@@ -220,7 +219,7 @@ BOOL CPage3::OnInitDialog() {
 
 		DWORD ControlStartAddr = EipAddr + 8;  //初始化控件基址
 
-		for (int t = 0;t < Window[i].ControlCount;t++) {
+		for (UINT t = 0;t < Window[i].ControlCount;t++) {
 
 			EipAddr = ControlStartAddr+ Window[i].Controloffset[t];
 			Window[i].ChildWindowId = *(unsigned long*)pEAnalysisEngine->O2V(EipAddr, r_index);
@@ -405,7 +404,7 @@ BOOL CPage3::OnInitDialog() {
 	}
 
 	
-	for (int i = 0;i < m_WindowInfo.WindowCount;i++) {
+	for (UINT i = 0;i < m_WindowInfo.WindowCount;i++) {
 		m_Tree.Expand(m_WindowInfo.WindowId[i],TVE_EXPAND);
 	}
 	m_Tree.Expand(hroot,TVE_EXPAND);

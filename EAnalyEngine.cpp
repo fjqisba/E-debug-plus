@@ -1,3 +1,6 @@
+/*————————————————————————————
+E-debug   为分析易语言结构体提供支持的分析引擎
+————————————————————————————*/
 #include "stdafx.h"
 #include "E-Debug.h"
 #include "MainWindow.h"
@@ -6,7 +9,7 @@
 extern CMainWindow *pMaindlg;
 
 UINT EAnalysis::FindSection(DWORD addr) {
-	for (int i = 0;i < SectionMap.size();i++) {
+	for (UINT i = 0;i < SectionMap.size();i++) {
 		if (addr >= SectionMap[i].dwBase && addr < (SectionMap[i].dwBase + SectionMap[i].dwSize)) {
 			return i;
 		}
@@ -23,7 +26,7 @@ UINT EAnalysis::AddSection(DWORD addr) {
 	}
 	
 	addsection.dwBase = (ULONG)MB.BaseAddress;
-	//addsection.dwSize = (DWORD)MB.AllocationBase;//两个不知道哪个好,暂时搁浅
+	//addsection.dwSize = (DWORD)MB.AllocationBase;//等待观察
 	addsection.dwSize = (DWORD)MB.RegionSize;
 
 	addsection.SectionAddr = (BYTE *)VirtualAlloc(NULL, addsection.dwSize, MEM_COMMIT, PAGE_READWRITE);
@@ -48,7 +51,6 @@ EAnalysis::~EAnalysis()
 }
 
 BOOL EAnalysis::EStaticLibInit() {    //易语言静态编译 识别初始化
-
 	DWORD	dwResult;
 	DWORD	dwCalc;
 

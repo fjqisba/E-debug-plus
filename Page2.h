@@ -1,10 +1,5 @@
 #pragma once
-#include "afxcmn.h"
-#include <map>
-#include <vector>
 
-using namespace std;
-// CPage2 ¶Ô»°¿ò
 
 class CPage2 : public CDialog
 {

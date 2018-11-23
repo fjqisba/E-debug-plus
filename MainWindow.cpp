@@ -1,20 +1,14 @@
-// MainWindow.cpp : 实现文件
-//
-
-
-/*
-	MainWindow,分析界面交互的接口
-*/
-
-
+/*————————————————————————————
+E-debug   分析界面交互的接口
+————————————————————————————*/
 #include "stdafx.h"
 #include "E-Debug.h"
 #include "afxdialogex.h"
 #include "MainWindow.h"
-#include <vector>
 #include "EAnalyEngine.h"
 
 extern HINSTANCE g_hInstace;
+
 UINT AnalysisMode;
 
 CMainWindow *pMaindlg;

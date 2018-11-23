@@ -1,11 +1,8 @@
 #pragma once
-#include "afxcmn.h"
+
 #include "Page1.h"
 #include "Page2.h"
 #include "Page3.h"
-#include "afxwin.h"
-
-// CMainWindow ¶Ô»°¿ò
 
 class CMainWindow : public CDialog
 {

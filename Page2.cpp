@@ -1,12 +1,12 @@
-// Page2.cpp : 实现文件
-//
+/*————————————————————————————
+E-debug   DLL命令调用识别
+————————————————————————————*/
 
 #include "stdafx.h"
 #include "E-Debug.h"
 #include "Page2.h"
 #include "afxdialogex.h"
 #include "EAnalyEngine.h"
-#include <string>
 #include "MainWindow.h"
 
 
@@ -94,7 +94,7 @@ BOOL CPage2::OnInitDialog() {
 	pszApinameAddr = pEAnalysisEngine->O2V(pEAnalysisEngine->pEnteyInfo->pApiName,r_index);
 
 	
-	for (int i = 0;i < pEAnalysisEngine->pEnteyInfo->dwApiCount;i++) {
+	for (UINT i = 0;i < pEAnalysisEngine->pEnteyInfo->dwApiCount;i++) {
 		pszLibname = (char*)pEAnalysisEngine->O2V(*(long*)pszLibnameAddr,r_index);
 		pszApiname = (char*)pEAnalysisEngine->O2V(*(long*)pszApinameAddr, r_index);
 		if (*(byte*)pszLibname == NULL) {
@@ -144,7 +144,7 @@ BOOL CPage2::OnInitDialog() {
 		dwSecSize -= offset + sizeof(ComCall);
 	}
 
-	for (int n = 0;n < m_map.size();n++) {     //写出引用次数
+	for (UINT n = 0;n < m_map.size();n++) {     //写出引用次数
 		order.Empty();
 		order.Format(L"%d", m_map[n].size());
 		m_api.SetItemText(n, 3,order);
@@ -187,7 +187,7 @@ void CPage2::On32771()  //DLL命令查找引用
 
 	int order = m_api.GetItemData(nPos);  //得到真实的序号
 	
-	for (int n = 0;n < m_map[order].size();n++) {
+	for (UINT n = 0;n < m_map[order].size();n++) {
 		int index = pMaindlg->outputInfo("%08X    mov eax,%08X     %s", m_map[order][n], order, W2A(m_api.GetItemText(nPos,2))); //显示出结果地址
 		pMaindlg->m_output.SetItemData(index, m_map[order][n]);
 	}
