@@ -51,6 +51,7 @@ BOOL CMainWindow::OnInitDialog() {
 	CDialog::OnInitDialog();
 	pMaindlg = this;   //得到窗口指针
 	
+	g_hInstace = AfxGetInstanceHandle();
 	HICON hIcon = LoadIcon(g_hInstace, MAKEINTRESOURCE(IDI_ICON));
 	SetIcon(hIcon, FALSE);
 	SetIcon(hIcon, TRUE);
@@ -125,13 +126,16 @@ BOOL CMainWindow::OnInitDialog() {
 		m_page2.Create(IDD_PAGE2, &m_Tab);
 		m_page2.MoveWindow(&rc);
 
+		m_page1.ShowWindow(true);
 	}
 	else if (AnalysisMode == CMode)
 	{
-		m_page1.Create(IDD_PAGE1, &m_Tab);
-		m_page1.MoveWindow(&rc);
+		MessageBoxA(NULL, "To Be Continued", "Failed", 0);
+		return true;
+		//m_page1.Create(IDD_PAGE1, &m_Tab);
+		//m_page1.MoveWindow(&rc);
 	}
-	m_page1.ShowWindow(true);
+	
 }
 
 void CMainWindow::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)

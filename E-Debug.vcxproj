@@ -205,6 +205,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TrieTree.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="E-Debug.def" />

@@ -6,7 +6,7 @@ E-debug   DLL与OD的交互接口
 #include "E-Debug.h"
 #include "MainWindow.h"
 
-HINSTANCE	g_hInstace;
+HINSTANCE g_hInstace;
 
 
 extc int _export cdecl ODBG_Plugindata(char shortname[32])
@@ -69,7 +69,7 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		}
 		else if (action == 1) {
 			AnalysisMode = CMode;
-			return; //To Be Continued
+			//return; //To Be Continued
 		}
 
 		if (Getcputhreadid() == 0) {

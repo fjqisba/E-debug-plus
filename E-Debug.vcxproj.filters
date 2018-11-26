@@ -68,6 +68,9 @@
     <ClInclude Include="Page3.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TrieTree.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="E-Debug.def">

@@ -8,7 +8,7 @@ E-debug   ÃüÁîÊ¶±ğ
 #include "EAnalyEngine.h"
 #include "Elib.h"
 #include "MainWindow.h"
-
+#include "TrieTree.h"
 
 extern  EAnalysis	*pEAnalysisEngine;
 extern 	CMainWindow *pMaindlg;
@@ -50,7 +50,7 @@ END_MESSAGE_MAP()
 // CPage1 ÏûÏ¢´¦Àí³ÌĞò
 BOOL CPage1::OnInitDialog() {
 	CDialog::OnInitDialog();
-	
+
 	LONG lStyle;
 
 	lStyle = GetWindowLong(m_lib.m_hWnd, GWL_STYLE);//»ñÈ¡µ±Ç°´°¿Ústyle
@@ -121,7 +121,7 @@ BOOL CPage1::OnInitDialog() {
 		strcat_s(szDirectory, szLibVer);strcat_s(szDirectory, ".Esig");
 
 
-		BOOL Sret = ReadSig(szDirectory,m_subFunc,m_Func);    //¶ÁÈ¡ESigÎÄ¼ş
+		BOOL Sret = LoadSig(szDirectory,m_subFunc,m_Func);    //¶ÁÈ¡ESigÎÄ¼ş
 		LIBMAP m_Libmap;
 
 		m_Libmap.Command_addr.clear();
@@ -149,8 +149,10 @@ BOOL CPage1::OnInitDialog() {
 						Progress(pMaindlg->promile = pMaindlg->promile + 1, "ÕıÔÚÊ¶±ğÖ§³Ö¿âÃüÁî...");
 						break;
 					}
+
 				}
-				if (!bMatchCom)   //¶ÔÓÚÆ¥ÅäÊ§°ÜµÄÃüÁî,½øĞĞÏàËÆ¶ÈÆ¥Åä
+
+				if (!bMatchCom)
 				{
 					m_Libmap.Command_name.push_back("Error");
 					Insertname(dwAddress, NM_LABEL, "Î´ÖªÃüÁî");
@@ -169,31 +171,25 @@ BOOL CPage1::OnInitDialog() {
 	}
 	
 	//¡ª¡ª¡ªÉ¨Ãè»ù´¡ÌØÕ÷Âë¡ª¡ª¡ª
+	TrieTree Tree;
+
 	char szDirectory[MAX_PATH] = {};
 	StrCpyA(szDirectory, DIRECTORY);
 	strcat_s(szDirectory, "\\Plugin\\Esig\\Emain.Esig");
 	map<string, string> m_temp;
 	map<string, string> m_basic;
-	ReadSig(szDirectory, m_temp, m_basic);//»ñµÃEmain.Esigº¯ÊıÌØÕ÷
+	LoadSig(szDirectory, m_temp, m_basic);//»ñµÃEmain.Esigº¯ÊıÌØÕ÷
 	ProgressAdd = 300 / m_basic.size();
 	
 	map<string, string>::iterator it;
-	DWORD StartAddr = pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0);
-	DWORD EndAddr = StartAddr + pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart;
-	
+
 	for (it = m_basic.begin();it != m_basic.end();it++) {
-		UCHAR BinCode[1024] = { 0 };
-		HexToBin(it->second, BinCode);
-		for (ULONG dwAddress = StartAddr;dwAddress < EndAddr;dwAddress++) {
-			if (MatchCode_FAST((UCHAR*)dwAddress,BinCode,it->second.length()/2)) {
-				Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "ÕıÔÚÉ¨Ãè»ù´¡ÌØÕ÷,ÇëµÈ´ı......");
-				Insertname(pEAnalysisEngine->V2O(dwAddress,0), NM_LABEL, (char*)it->first.c_str());
-				dwAddress = dwAddress - 1 + (it->second.length() / 2);
-				break;
-			}
-		}
+		Tree.Insert(it->second,it->first);
 	}
 
+	Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);
+
+	
 	Progress(1000, "ÕıÔÚÉ¨Ãè»ù´¡ÌØÕ÷,ÇëµÈ´ı......");
 	Progress(0, "");
 	Infoline("Ê¶±ğÃüÁîÍê±Ï...");
@@ -202,13 +198,12 @@ BOOL CPage1::OnInitDialog() {
 	return true;
 }
 
-BOOL CPage1::IsValidAddr(ULONG addr) { //±¸ÓÃ
+BOOL CPage1::IsValidAddr(ULONG addr) {		//±¸ÓÃ
 	if (addr > pEAnalysisEngine->SectionMap[0].dwBase + pEAnalysisEngine->SectionMap[0].dwSize || addr < pEAnalysisEngine->SectionMap[0].dwBase) {
 		return false;
 	}
 	return true;
 }
-
 
 BOOL CPage1::MatchCode_FAST(UCHAR* FuncSrc, UCHAR* BinCode, int nLen)  //²ÎÊıÒ»Óë²ÎÊı¶ş¶Ô±È,²ÎÊıÈıÎª¶Ô±È³¤¶È
 {
@@ -229,7 +224,7 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊıÒ»ÎªĞéÄâµØÖ·,²ÎÊı¶
 	USES_CONVERSION;
 	UCHAR* pSrc = FuncSrc;  //³õÊ¼»¯º¯Êı´úÂëÖ¸Õë
 
-	for (int n = 0;n < FuncTxt.length();n++) {
+	for (UINT n = 0;n < FuncTxt.length();n++) {
 		if (FuncTxt[n] == '-' && FuncTxt[n + 1] == '-' && FuncTxt[n + 2] == '>') {    //--> ³¤Ìø×ª,ÔİÎ´Í¨¹ıÊµ¼ùÑéÖ¤
 			if (*pSrc != 0xE9) {
 				return false;
