@@ -4,7 +4,8 @@
 
 ### 关于E-debug Plus的工作原理
 
-E-debug Plus的目的是识别函数命令,为此首先开发了ECodeMake,ECodeMake是将易语言的支持库函数转换为Esig的一款工具.
+E-debug Plus的目的是识别函数命令,为此首先开发了ECodeMake,ECodeMake是将易语言的支持库函数转换为Esig的一款工具:https://github.com/fjqisba/CodeMake
+
 例如取字节集长度这个命令
 ![001](/IMG/001.png)
 
@@ -29,20 +30,21 @@ ECodeMake会将之转换为8B44240C8B0085C075078B4C24048901C38B5424048B40048902C
 ```C
 typedef struct
 {
-	char	m_CommandName[64];				//命令名称
-	int  	m_CallType;					    //函数类型,0代表无重复CALL,1代表需要判断第二个CALL,2代表需要判断IAT函数的CALL
-											//3代表判断CALL之前有一段特殊代码
-	ULONG   m_CallOffset;			        //记录需要判断的call的偏移
-	int		m_size;							//程序一阶函数的字节大小
-	UCHAR   m_opcode[128];	        		//匹配的字节
+	char	m_CommandName[64];              //命令名称
+	int  	m_CallType;                     //函数类型,0代表无重复CALL,1代表需要判断第二个CALL,2代表需要判断IAT函数的CALL
+                                            //3代表判断CALL之前有一段特殊代码
+	ULONG   m_CallOffset;                   //记录需要判断的call的偏移
+	int		m_size;                         //程序一阶函数的字节大小
+	UCHAR   m_opcode[128];                  //匹配的字节
 	int     m_size2;                        //程序二阶函数的字节大小
-	UCHAR	m_opcode2[128];	        		//类型1或3时的opcode
+	UCHAR	m_opcode2[128];                 //类型1或3时的opcode
 	char    m_IATEAT[128];                  //call为类型2时为IAT与EAT
 }ESTATICLIBOPCODE, *PESTATICLIBOPCODE;
-```C
+```
 
-这就是E-debug3.0当中的做法,现在看来是非常不好的,即使通过一段时间的完善,能够识别出易语言系统核心支持库的600多条命令,后续批量制作特征文本、
-对任意函数生成特征文本又该怎么办呢?
+这就是E-debug3.0当中的做法,现在看来是非常不好的,即使通过一段时间的完善,能够识别出易语言系统核心支持库的600多条命令,
+
+后续批量制作特征文本、对任意函数生成特征文本又该怎么办呢?
 
 于是我思考了很久,想到了得自己制作一个简易的函数<->文本相互转换引擎,即ECODEMAKE是将函数转换为文本,E-debug则负责将文本转换为函数进行识别.
 
