@@ -86,6 +86,7 @@ BOOL CPage1::OnInitDialog() {
 	CString		strLib, strGuid;
 	CString		str;
 
+
 	UINT r_index = pEAnalysisEngine->FindSection(pFirst);
 	if (r_index == -1) {
 		r_index = pEAnalysisEngine->AddSection(pFirst);
@@ -95,6 +96,7 @@ BOOL CPage1::OnInitDialog() {
 	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
 	for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
 	{
+		
 		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
 		strLib.Format(L"---->%s (Ver:%1d.%1d)",
 			(CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index),
@@ -135,6 +137,24 @@ BOOL CPage1::OnInitDialog() {
 			}
 		}
 		else {
+			/*TrieTree	Tree;
+
+			map<string, string>::iterator it;
+			for (it = m_Func.begin();it != m_Func.end();it++) {		//生成树
+				Tree.Insert(it->second, it->first);
+			}
+
+			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
+				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
+				m_Libmap.Command_addr.push_back(dwAddress);
+				char* FuncName = Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0));
+				if(FuncName)
+					m_Libmap.Command_name.push_back(FuncName);
+					Insertname(dwAddress, NM_LABEL, FuncName);
+					MessageBoxA(NULL, FuncName, "123", 0);
+				}
+			}*/
+
 			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {     //对于程序中的每个命令,进行一次精确匹配
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
 				m_Libmap.Command_addr.push_back(dwAddress);
@@ -160,6 +180,7 @@ BOOL CPage1::OnInitDialog() {
 
 				pFunc += sizeof(int);
 			}
+			
 		}
 
 		m_map[nPos] = m_Libmap;
@@ -189,7 +210,6 @@ BOOL CPage1::OnInitDialog() {
 
 	Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);
 
-	
 	Progress(1000, "正在扫描基础特征,请等待......");
 	Progress(0, "");
 	Infoline("识别命令完毕...");
