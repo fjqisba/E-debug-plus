@@ -96,7 +96,7 @@ OD\plugin\Esig即可
 未加壳的程序,在text区段可直接分析.
 加壳的程序,可待text区段解码后，CPU窗口到达text区段再开始分析.
 
-![测试](/IMG/测试.GIF)
+![测试](/IMG/测试.gif)
 
 如果有分析崩溃的样本,可以发送至fjqisba@sohu.com
 
