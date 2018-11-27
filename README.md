@@ -50,11 +50,11 @@ typedef struct
 
 ### Esig介绍:
 Esig就是ECODEMAKE生成的函数文本化格式,为了应付各种各样的函数,有以下文本格式,  
-<>:CALL 命令
--->:jmp 跳转指令  
-<[]>:IAT 函数调用指令,即FF15  
-[]:IAT 函数jmp指令,即FF25  
-[]>:jmp 函数类跳转,也是FF25  
+<>:CALL 命令,例如<20181116>
+-->:jmp 跳转指令,例如50-->58C3
+<[]>:IAT/EAT 函数调用指令,例如<[KERNEL32.InitializeCriticalSection||RtlInitializeCriticalSection]>,前面是检索导入表,后面为检索导出表
+[]:IAT/EAT 函数jmp指令,例如[KERNEL32.TerminateThread]
+[]>:jmp 函数类跳转,例如易语言调用Delphi的支持库就会采取跳转的方式.
 ??:通配符
 
 通过以上一些格式,我们可以想象出易语言的大部分函数终于能表示出来了.
@@ -90,8 +90,5 @@ OD\plugin\Esig即可
 未加壳的程序,在text区段可直接分析.
 加壳的程序,可待text区段解码后，CPU窗口到达text区段再开始分析.
 
-
-同时Esig也是可以修改和制作的,
-
-另外如果有分析崩溃的样本,也可以发给我看看.
+如果有分析崩溃的样本,可以发送至fjqisba@sohu.com
 
