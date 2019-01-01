@@ -85,7 +85,7 @@ BOOL CPage2::OnInitDialog() {
 		return true;
 	}
 
-	UINT r_index = pEAnalysisEngine->FindSection(pEAnalysisEngine->pEnteyInfo->pLibName);
+	UINT r_index = pEAnalysisEngine->FindOriginSection(pEAnalysisEngine->pEnteyInfo->pLibName);
 	if (r_index == -1) {
 		r_index = pEAnalysisEngine->AddSection(pEAnalysisEngine->pEnteyInfo->pLibName);
 	}

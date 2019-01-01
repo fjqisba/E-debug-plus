@@ -87,7 +87,7 @@ BOOL CPage1::OnInitDialog() {
 	CString		str;
 
 
-	UINT r_index = pEAnalysisEngine->FindSection(pFirst);
+	UINT r_index = pEAnalysisEngine->FindOriginSection(pFirst);
 	if (r_index == -1) {
 		r_index = pEAnalysisEngine->AddSection(pFirst);
 	}
@@ -96,7 +96,8 @@ BOOL CPage1::OnInitDialog() {
 	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
 	for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //¶ÔÓÚ½âÎö³öÀ´µÄÃ¿¸öÖ§³Ö¿â
 	{
-		
+		TrieTree	Tree = {};
+
 		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
 		strLib.Format(L"---->%s (Ver:%1d.%1d)",
 			(CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index),
@@ -122,8 +123,8 @@ BOOL CPage1::OnInitDialog() {
 		strcat_s(szDirectory, "\\Plugin\\Esig\\");strcat_s(szDirectory, (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index));
 		strcat_s(szDirectory, szLibVer);strcat_s(szDirectory, ".Esig");
 
-
-		BOOL Sret = LoadSig(szDirectory,m_subFunc,m_Func);    //¶ÁÈ¡ESigÎÄ¼ş
+		
+		BOOL Sret = Tree.LoadSig(szDirectory);    //¶ÁÈ¡ESigÎÄ¼ş
 		LIBMAP m_Libmap;
 
 		m_Libmap.Command_addr.clear();
@@ -137,30 +138,32 @@ BOOL CPage1::OnInitDialog() {
 			}
 		}
 		else {
-			/*TrieTree	Tree;
-
-			map<string, string>::iterator it;
-			for (it = m_Func.begin();it != m_Func.end();it++) {		//Éú³ÉÊ÷
-				Tree.Insert(it->second, it->first);
-			}
 
 			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
 				m_Libmap.Command_addr.push_back(dwAddress);
+				MessageBoxA(NULL, "¿ªÊ¼Æ¥Åä", "123", 0);
 				char* FuncName = Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0));
-				if(FuncName)
+				if (FuncName) {
 					m_Libmap.Command_name.push_back(FuncName);
 					Insertname(dwAddress, NM_LABEL, FuncName);
-					MessageBoxA(NULL, FuncName, "123", 0);
 				}
-			}*/
-
-			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {     //¶ÔÓÚ³ÌĞòÖĞµÄÃ¿¸öÃüÁî,½øĞĞÒ»´Î¾«È·Æ¥Åä
+				else
+				{
+					m_Libmap.Command_name.push_back("Error");
+					Insertname(dwAddress, NM_LABEL, "Î´ÖªÃüÁî");
+				}
+				pFunc += sizeof(int);
+			}
+			
+			
+			/*for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {     //¶ÔÓÚ³ÌĞòÖĞµÄÃ¿¸öÃüÁî,½øĞĞÒ»´Î¾«È·Æ¥Åä
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
 				m_Libmap.Command_addr.push_back(dwAddress);
 				BOOL bMatchCom = false;
 				map<string, string>::iterator it;
 				for(it=m_Func.begin();it!=m_Func.end();it++){
+					//pMaindlg->outputInfo("%s", it->first.c_str());
 					if (MatchCode((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0), it->second)) {
 						m_Libmap.Command_name.push_back(it->first);
 						Insertname(dwAddress, NM_LABEL,(char*)it->first.c_str());
@@ -179,7 +182,7 @@ BOOL CPage1::OnInitDialog() {
 				}
 
 				pFunc += sizeof(int);
-			}
+			}*/
 			
 		}
 
@@ -188,6 +191,7 @@ BOOL CPage1::OnInitDialog() {
 		m_lib.InsertItem(nPos, L"¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D¨D"); nPos++;
 
 		Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "ÕıÔÚÊ¶±ğÖ§³Ö¿â...");
+		
 		pFirst += sizeof(DWORD);
 	}
 	
@@ -199,7 +203,7 @@ BOOL CPage1::OnInitDialog() {
 	strcat_s(szDirectory, "\\Plugin\\Esig\\Emain.Esig");
 	map<string, string> m_temp;
 	map<string, string> m_basic;
-	LoadSig(szDirectory, m_temp, m_basic);//»ñµÃEmain.Esigº¯ÊıÌØÕ÷
+	/*LoadSig(szDirectory, m_temp, m_basic);//»ñµÃEmain.Esigº¯ÊıÌØÕ÷
 	ProgressAdd = 300 / m_basic.size();
 	
 	map<string, string>::iterator it;
@@ -208,7 +212,7 @@ BOOL CPage1::OnInitDialog() {
 		Tree.Insert(it->second,it->first);
 	}
 
-	Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);
+	Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);*/
 
 	Progress(1000, "ÕıÔÚÉ¨Ãè»ù´¡ÌØÕ÷,ÇëµÈ´ı......");
 	Progress(0, "");
@@ -218,12 +222,7 @@ BOOL CPage1::OnInitDialog() {
 	return true;
 }
 
-BOOL CPage1::IsValidAddr(ULONG addr) {		//±¸ÓÃ
-	if (addr > pEAnalysisEngine->SectionMap[0].dwBase + pEAnalysisEngine->SectionMap[0].dwSize || addr < pEAnalysisEngine->SectionMap[0].dwBase) {
-		return false;
-	}
-	return true;
-}
+
 
 BOOL CPage1::MatchCode_FAST(UCHAR* FuncSrc, UCHAR* BinCode, int nLen)  //²ÎÊıÒ»Óë²ÎÊı¶ş¶Ô±È,²ÎÊıÈıÎª¶Ô±È³¤¶È
 {
@@ -336,7 +335,7 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊıÒ»ÎªĞéÄâµØÖ·,²ÎÊı¶
 
 			ULONG jmpaddr = *(ULONG*)(pSrc + 2);  //µÃµ½´æ·Åº¯ÊıµØÖ·µÄÖ¸Õë
 
-			UINT r_index = pEAnalysisEngine->FindSection(jmpaddr);
+			UINT r_index = pEAnalysisEngine->FindOriginSection(jmpaddr);
 			if (r_index == -1) {
 				r_index = pEAnalysisEngine->AddSection(jmpaddr);
 			}
@@ -346,7 +345,7 @@ BOOL CPage1::MatchCode(UCHAR* FuncSrc,string& FuncTxt)  //²ÎÊıÒ»ÎªĞéÄâµØÖ·,²ÎÊı¶
 				return false;
 			}
 
-			r_index = pEAnalysisEngine->FindSection(jmpaddr);
+			r_index = pEAnalysisEngine->FindOriginSection(jmpaddr);
 			if (r_index == -1) {
 				r_index = pEAnalysisEngine->AddSection(jmpaddr);
 			}

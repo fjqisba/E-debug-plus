@@ -11,7 +11,7 @@ HINSTANCE g_hInstace;
 
 extc int _export cdecl ODBG_Plugindata(char shortname[32])
 {
-	strcpy(shortname, "E-Debug Plus 1.0");
+	strcpy(shortname, "E-Debug Plus 1.1");
 	return PLUGIN_VERSION;
 }
 
@@ -26,7 +26,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion, HWND hw, DWORD *featu
 		Addtolist(0, 0, "提示: 插件版本与OD不匹配!");
 		return -1;
 	}
-	Addtolist(0, 0, "%s", "E-Debug Plus 1.0");
+	Addtolist(0, 0, "%s", "E-Debug Plus 1.1");
 	Addtolist(0, -1, "%s","  by:fjqisba");
 
 	//在这里修复一个OD 界面选项BUG

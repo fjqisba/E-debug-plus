@@ -8,7 +8,16 @@ E-debug   为分析易语言结构体提供支持的分析引擎
 
 extern CMainWindow *pMaindlg;
 
-UINT EAnalysis::FindSection(DWORD addr) {
+UINT EAnalysis::FindVirutalSection(ULONG addr) {		//备用
+	for (UINT i = 0;i < SectionMap.size();i++) {
+		if (addr >= (DWORD)SectionMap[i].SectionAddr && addr < ((DWORD)SectionMap[i].SectionAddr + SectionMap[i].dwSize)) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+UINT EAnalysis::FindOriginSection(ULONG addr) {
 	for (UINT i = 0;i < SectionMap.size();i++) {
 		if (addr >= SectionMap[i].dwBase && addr < (SectionMap[i].dwBase + SectionMap[i].dwSize)) {
 			return i;

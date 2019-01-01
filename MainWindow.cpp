@@ -102,7 +102,7 @@ BOOL CMainWindow::OnInitDialog() {
 		}
 		DWORD	dwPoint;
 
-		UINT index = pEAnalysisEngine->FindSection(dwKrnlEntry);
+		UINT index = pEAnalysisEngine->FindOriginSection(dwKrnlEntry);
 
 		if (index == -1) {           //区段有可能被切割,加入新的区段
 			index = pEAnalysisEngine->AddSection(dwKrnlEntry);

@@ -155,7 +155,7 @@ BOOL CPage3::OnInitDialog() {
 		return TRUE;
 	}
 
-	UINT r_index = pEAnalysisEngine->FindSection(EipAddr);
+	UINT r_index = pEAnalysisEngine->FindOriginSection(EipAddr);
 	if (r_index == -1) {
 		r_index = pEAnalysisEngine->AddSection(EipAddr);
 	}
