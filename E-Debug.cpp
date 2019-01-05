@@ -7,11 +7,92 @@ E-debug   DLL与OD的交互接口
 #include "MainWindow.h"
 
 HINSTANCE g_hInstace;
+vector<EsigInfo> EsigList;
+
+BOOL LoadSig(char* lpMapPath,char* Category) {
+	HANDLE hFile = CreateFileA(lpMapPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		return false;
+	}
+
+	DWORD	dwHitSize = 0;
+	DWORD	dwSize = GetFileSize(hFile, &dwHitSize);
+	DWORD	dwReadSize = 0;
+	char* pMap = (char*)malloc(dwSize);
+
+	ReadFile(hFile, pMap, dwSize, &dwReadSize, NULL);	//读取文本至内存
+
+	string Sig = pMap;
+
+	string Config = GetMidString(Sig, "******Config******\r\n", "******Config_End******", 0);
+	string Name = GetMidString(Sig, "Name=", "\r\n", 0);
+	string Description = GetMidString(Sig, "Description=", "\r\n", 0);
+
+	if (!Name.size()) {
+		return false;
+	}
+	
+	EsigInfo saveinfo;
+	saveinfo.Category = Category;
+	saveinfo.Name = Name;
+	saveinfo.Description = Description;
+	saveinfo.Path = lpMapPath;
+	
+	EsigList.push_back(saveinfo);
+	
+	if (pMap) {
+		free(pMap);
+	}
+
+	CloseHandle(hFile);
+	return TRUE;
+}
+
+BOOL EnumEsig() {
+	if (EsigList.size()) {
+		return true;
+	}
+
+	char path[256] = {};
+	strcpy_s(path, DIRECTORY);strcat_s(path, "\\plugin\\esig\\*.*");
+	WIN32_FIND_DATAA FindFileData;
+	HANDLE hFind = FindFirstFileA(path, &FindFileData);
+	if (hFind == INVALID_HANDLE_VALUE) {
+		MessageBoxA(NULL, "枚举esig文件失败", "错误", MB_ICONINFORMATION);
+		return false;
+	}
+
+	do {
+		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			string strname = FindFileData.cFileName;
+			if (strname != "." && strname != "..") {
+				char path2[256] = {};
+				strcpy_s(path2, DIRECTORY);strcat_s(path2, "\\plugin\\esig\\");strcat_s(path2, FindFileData.cFileName);strcat_s(path2, "\\*.esig");
+				WIN32_FIND_DATAA FindFileData2;
+				HANDLE hFind2 = FindFirstFileA(path2, &FindFileData2);
+				if (hFind2) {
+					do {
+						char lpMapPath[256] = {};
+						strcpy_s(lpMapPath, DIRECTORY);strcat_s(lpMapPath, "\\plugin\\esig\\");strcat_s(lpMapPath, FindFileData.cFileName);strcat_s(lpMapPath, "\\");
+						strcat_s(lpMapPath,FindFileData2.cFileName);
+						LoadSig(lpMapPath,FindFileData.cFileName);	
+					} while (FindNextFileA(hFind2, &FindFileData2));
+					CloseHandle(hFind2);
+				}
+			}
+		}
+	} while (FindNextFileA(hFind, &FindFileData));
+	CloseHandle(hFind);
+	
+	return true;
+}
 
 
 extc int _export cdecl ODBG_Plugindata(char shortname[32])
 {
-	strcpy(shortname, "E-Debug Plus 1.1");
+	strcpy(shortname, "E-Debug Plus");
 	return PLUGIN_VERSION;
 }
 
@@ -26,7 +107,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion, HWND hw, DWORD *featu
 		Addtolist(0, 0, "提示: 插件版本与OD不匹配!");
 		return -1;
 	}
-	Addtolist(0, 0, "%s", "E-Debug Plus 1.1");
+	Addtolist(0, 0, "%s", "E-Debug Plus 1.15");
 	Addtolist(0, -1, "%s","  by:fjqisba");
 
 	//在这里修复一个OD 界面选项BUG
@@ -57,8 +138,7 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		if (action == 2) {
 			CString szInfo;
 			szInfo += "Plugin:E-Debug Plus\r\n";
-			szInfo += "Verion:1.1\r\n";
-			szInfo += "Bug:fjqisba@sohu.com\r\n";
+			szInfo += "Verion:1.15\r\n";
 			szInfo += " Thanks to Xjun";
 			MessageBox(NULL, szInfo, L"About", MB_ICONINFORMATION);
 			return;
@@ -77,6 +157,9 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 			Flash("未载入程序!");
 			return;
 		}
+
+		EnumEsig();
+		
 		CMainWindow *pMainDlg = new CMainWindow;
 		pMainDlg->Create(IDD_MainWindow, NULL);
 		pMainDlg->ShowWindow(SW_SHOW);

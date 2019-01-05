@@ -8,6 +8,7 @@ E-debug   分析界面交互的接口
 #include "EAnalyEngine.h"
 
 extern HINSTANCE g_hInstace;
+//extern EsigList Esig;
 
 UINT AnalysisMode;
 
@@ -70,7 +71,9 @@ BOOL CMainWindow::OnInitDialog() {
 
 	pEAnalysisEngine = new EAnalysis(uBase);   //初始化内存
 
+
 	if (AnalysisMode == StaticMode) {    //静态编译程序
+		
 		m_Tab.InsertItem(0, _T("支持库命令"));
 		m_Tab.InsertItem(1, _T("API命令"));
 		if (!pEAnalysisEngine->EStaticLibInit()) {
@@ -130,7 +133,10 @@ BOOL CMainWindow::OnInitDialog() {
 	}
 	else if (AnalysisMode == CMode)
 	{
-		MessageBoxA(NULL, "To Be Continued", "Failed", 0);
+		m_Tab.InsertItem(0, _T("函数"));
+		m_Tab.InsertItem(1, _T("特征库"));
+
+		MessageBoxA(NULL, "To Be Continued", "错误",MB_ICONINFORMATION);
 		return true;
 		//m_page1.Create(IDD_PAGE1, &m_Tab);
 		//m_page1.MoveWindow(&rc);
@@ -141,7 +147,7 @@ BOOL CMainWindow::OnInitDialog() {
 void CMainWindow::OnTcnSelchangeTab1(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	int nCursel = m_Tab.GetCurSel()+1;
-	switch (nCursel)
+	switch (nCursel)						//这似乎是比较稳定高效的办法,如果有更好的方法,可以修改
 	{
 	case 1:
 		if (IsWindow(m_page1.m_hWnd)) {

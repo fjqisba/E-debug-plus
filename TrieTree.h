@@ -104,20 +104,7 @@ void TrieTree::Destroy(TrieTreeNode* p) {
 	p = NULL;
 }
 
-string GetMidString(string& src, int& offset, const char* left, const char* right) {
-	int start = src.find(left, offset);
-	if (start == -1) {
-		return "";
-	}
 
-	int end = src.find(right, start);
-	if (end == -1) {
-		return "";
-	}
-
-	offset = end;
-	return src.substr(start + strlen(left), offset - start - strlen(left));
-}
 
 BOOL TrieTree::LoadSig(const char* lpMapPath) {
 	HANDLE hFile = CreateFileA(lpMapPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -136,9 +123,7 @@ BOOL TrieTree::LoadSig(const char* lpMapPath) {
 
 	string Sig = pMap;
 
-	int offset = 0;
-
-	string Config = GetMidString(Sig, offset, "******Config******\r\n", "******Config_End******");
+	string Config = GetMidString(Sig, "******Config******\r\n", "******Config_End******",0);
 	
 	if (Config.find("IsAligned=true")!=-1) {
 		IsAligned = true;
@@ -148,7 +133,7 @@ BOOL TrieTree::LoadSig(const char* lpMapPath) {
 		IsAligned = false;
 	}
 
-	string SubFunc = GetMidString(Sig, offset, "*****SubFunc*****\r\n", "*****SubFunc_End*****");
+	string SubFunc = GetMidString(Sig, "*****SubFunc*****\r\n", "*****SubFunc_End*****", 0);
 	
 	int pos = SubFunc.find("\r\n");     //×Óº¯Êý
 
@@ -164,7 +149,7 @@ BOOL TrieTree::LoadSig(const char* lpMapPath) {
 	}
 
 	
-	string Func = GetMidString(Sig, offset, "***Func***\r\n", "***Func_End***");
+	string Func = GetMidString(Sig, "***Func***\r\n", "***Func_End***", 0);
 	
 	pos = Func.find("\r\n");
 
@@ -582,7 +567,7 @@ BOOL TrieTree::Insert(string& FuncTxt,const string& FuncName) {		//²ÎÊýÒ»Îªº¯Êýµ
 	}
 
 	if (p->FuncName) {		//È·±£º¯ÊýÃû³ÆÎ¨Ò»ÐÔ£¡£¡£¡
-		MessageBoxA(NULL, "´íÎó", "·¢ÏÖÏàÍ¬º¯Êý", 0);
+		MessageBoxA(NULL, p->FuncName, "·¢ÏÖÏàÍ¬º¯Êý", 0);
 		return false;
 	}
 	p->FuncName = new char[FuncName.length() + 1];strcpy_s(p->FuncName, FuncName.length() + 1, FuncName.c_str());

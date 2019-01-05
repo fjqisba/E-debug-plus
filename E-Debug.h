@@ -9,13 +9,21 @@
 #define NormalMode 1  //编译或独立编译模式
 #define CMode      2  //黑月编译，属于C语言模式
 
-
+/*一份E-debug一份EsigList*/
+struct EsigInfo
+{
+	string Category;		//只有一层小类别
+	string Name;			//Esig库名称
+	string Description;		//Esig库描述
+	string Path;			//路径
+};
 
 /*————————————————————————————
 声明全局变量
 ————————————————————————————*/
 extern char DIRECTORY[MAX_PATH];  //插件目录
 extern UINT AnalysisMode;		//当前选择的分析模式
+extern vector<EsigInfo> EsigList;
 
 
 
@@ -23,6 +31,8 @@ extern UINT AnalysisMode;		//当前选择的分析模式
 /*————————————————————————————
 以下是一些基础函数,能放在这里的函数尽量放在这里
 ————————————————————————————*/
+
+
 static HANDLE GethProcess() {           //返回所调试进程的句柄
 	return (HANDLE)*(DWORD*)0x4D5A68;
 }
@@ -107,4 +117,18 @@ static DWORD Search_Bin(byte *pSrc, byte *pTrait, int nSrcLen, int nTraitLen) //
 
 	}
 	return 0;
+}
+
+static string GetMidString(string& src,const char* left, const char* right, int offset) {		//参数一为原文本,参数二为左边文本,参数三为右边文本,参数四为起始偏移
+	int start = src.find(left, offset);
+	if (start == -1) {
+		return "";
+	}
+
+	int end = src.find(right, start);
+	if (end == -1) {
+		return "";
+	}
+
+	return src.substr(start + strlen(left), end - start - strlen(left));
 }

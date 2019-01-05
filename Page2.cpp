@@ -111,7 +111,6 @@ BOOL CPage2::OnInitDialog() {
 		pszApinameAddr += 4;
 	}
 
-	
 	byte ComCall[6] = { 0xB8, 0x90, 0x90, 0x00, 0x00 ,0xE8 };
 	byte *pTmp = (byte*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart,0);
 

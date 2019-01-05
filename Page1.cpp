@@ -87,6 +87,7 @@ BOOL CPage1::OnInitDialog() {
 	CString		str;
 
 
+
 	UINT r_index = pEAnalysisEngine->FindOriginSection(pFirst);
 	if (r_index == -1) {
 		r_index = pEAnalysisEngine->AddSection(pFirst);
@@ -96,9 +97,10 @@ BOOL CPage1::OnInitDialog() {
 	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
 	for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
 	{
-		TrieTree	Tree = {};
-
+		
 		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
+		string Name = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName,r_index);
+		string Guid = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index);
 		strLib.Format(L"---->%s (Ver:%1d.%1d)",
 			(CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index),
 			pLibInfo->m_nMajorVersion,
@@ -118,11 +120,17 @@ BOOL CPage1::OnInitDialog() {
 		wsprintfA(szLibVer, "\\%1d.%1d", pLibInfo->m_nMajorVersion, pLibInfo->m_nMinorVersion);
 
 		char szDirectory[MAX_PATH] = {};
-		StrCpyA(szDirectory, DIRECTORY);
-
-		strcat_s(szDirectory, "\\Plugin\\Esig\\");strcat_s(szDirectory, (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index));
-		strcat_s(szDirectory, szLibVer);strcat_s(szDirectory, ".Esig");
-
+		for (UINT n = 0;n < EsigList.size();n++) {
+			if (EsigList[n].Category != "易语言") {
+				continue;
+			}
+			if (EsigList[n].Name == Name && EsigList[n].Description==Guid) {
+				strcpy_s(szDirectory, EsigList[n].Path.c_str());
+				break;
+			}
+		}
+		
+		TrieTree	Tree = {};
 		
 		BOOL Sret = Tree.LoadSig(szDirectory);    //读取ESig文件
 		LIBMAP m_Libmap;
@@ -138,11 +146,10 @@ BOOL CPage1::OnInitDialog() {
 			}
 		}
 		else {
-
 			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
 				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
 				m_Libmap.Command_addr.push_back(dwAddress);
-				MessageBoxA(NULL, "开始匹配", "123", 0);
+				//MessageBoxA(NULL, "开始匹配", "123", 0);
 				char* FuncName = Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0));
 				if (FuncName) {
 					m_Libmap.Command_name.push_back(FuncName);
@@ -593,7 +600,7 @@ void CPage1::On32771()   //查找引用按钮
 		int index= pMaindlg->outputInfo("%08X    mov ebx,%08X    //%s", dwResult, dwData, W2A(strCom)); //显示出结果地址
 		pMaindlg->m_output.SetItemData(index, dwResult);
 		dwResult += sizeof(ComCall);
-		pTmp += offset+sizeof(ComCall);		
+		pTmp += offset+sizeof(ComCall);
 		dwSecSize -= offset + sizeof(ComCall);
 	}
 }
