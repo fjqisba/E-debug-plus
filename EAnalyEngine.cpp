@@ -7,8 +7,9 @@ E-debug   为分析易语言结构体提供支持的分析引擎
 #include "EAnalyEngine.h"
 
 extern CMainWindow *pMaindlg;
+EAnalysis	*pEAnalysisEngine;
 
-UINT EAnalysis::FindVirutalSection(ULONG addr) {		//备用
+INT EAnalysis::FindVirutalSection(ULONG addr) {		//备用
 	for (UINT i = 0;i < SectionMap.size();i++) {
 		if (addr >= (DWORD)SectionMap[i].SectionAddr && addr < ((DWORD)SectionMap[i].SectionAddr + SectionMap[i].dwSize)) {
 			return i;
@@ -17,7 +18,7 @@ UINT EAnalysis::FindVirutalSection(ULONG addr) {		//备用
 	return -1;
 }
 
-UINT EAnalysis::FindOriginSection(ULONG addr) {
+INT EAnalysis::FindOriginSection(ULONG addr) {
 	for (UINT i = 0;i < SectionMap.size();i++) {
 		if (addr >= SectionMap[i].dwBase && addr < (SectionMap[i].dwBase + SectionMap[i].dwSize)) {
 			return i;
@@ -26,37 +27,72 @@ UINT EAnalysis::FindOriginSection(ULONG addr) {
 	return -1;
 }
 
-UINT EAnalysis::AddSection(DWORD addr) {
-	_MEMORY_BASIC_INFORMATION MB;
-	sectionAlloc addsection;
-	if (!VirtualQueryEx(GethProcess(), (LPCVOID*)addr, &MB, sizeof(MEMORY_BASIC_INFORMATION))) {
-		pMaindlg->outputInfo("查询内存失败!");
-		return FALSE;
+INT EAnalysis::UpdateSection(DWORD addr) {
+	INT index = FindOriginSection(addr);
+	t_memory* T_memory;
+	if (index != -1) {		//已经拷贝过一次页面也要重新拷贝一次
+		VirtualFree(SectionMap[index].SectionAddr, 0, MEM_RELEASE);
+		T_memory = Findmemory(addr);
+		if (!T_memory) {
+			pMaindlg->outputInfo("查询内存失败!");
+			return -1;
+		}
+		SectionMap[index].dwBase = T_memory->base;
+		SectionMap[index].dwSize = T_memory->size;
+		SectionMap[index].SectionAddr = (BYTE *)VirtualAlloc(NULL, SectionMap[index].dwSize, MEM_COMMIT, PAGE_READWRITE);
+		if (!SectionMap[index].SectionAddr) {
+			pMaindlg->outputInfo("申请内存失败!");
+			return -1;
+		}
+		ULONG Rsize = Readmemory(SectionMap[index].SectionAddr, SectionMap[index].dwBase, SectionMap[index].dwSize, MM_RESILENT);
+		if (Rsize != SectionMap[index].dwSize) {
+			pMaindlg->outputInfo("读取内存大小不同！");
+			return -1;
+		}
+		return index;
 	}
-	
-	addsection.dwBase = (ULONG)MB.BaseAddress;
-	//addsection.dwSize = (DWORD)MB.AllocationBase;//等待观察
-	addsection.dwSize = (DWORD)MB.RegionSize;
+	return AddSection(addr);
+}
 
-	addsection.SectionAddr = (BYTE *)VirtualAlloc(NULL, addsection.dwSize, MEM_COMMIT, PAGE_READWRITE);
-	if (addsection.SectionAddr == NULL) {
-		pMaindlg->outputInfo("申请额外内存失败!");
+INT EAnalysis::AddSection(DWORD addr) {
+
+	sectionAlloc addsection;
+	t_memory* T_memory;
+
+	T_memory = Findmemory(addr);
+	if (!T_memory) {
+		pMaindlg->outputInfo("查询内存失败!");
 		return -1;
 	}
-	
-	Readmemory(addsection.SectionAddr, addsection.dwBase, addsection.dwSize, MM_RESILENT);
+
+	addsection.dwBase = T_memory->base;
+	addsection.dwSize = T_memory->size;
+	addsection.SectionAddr = (BYTE *)VirtualAlloc(NULL, addsection.dwSize, MEM_COMMIT, PAGE_READWRITE);
+	if (addsection.SectionAddr == NULL) {
+		pMaindlg->outputInfo("申请内存失败!");
+		return -1;
+	}
+
+	ULONG Rsize=Readmemory(addsection.SectionAddr, addsection.dwBase, addsection.dwSize, MM_RESILENT);
+	if (Rsize != addsection.dwSize) {
+		pMaindlg->outputInfo("读取内存大小不同！");
+		return -1;
+	}
 	SectionMap.push_back(addsection);
+	//pMaindlg->outputInfo("实际分析内存大小:%X", T_memory->size);
 	return SectionMap.size()-1;
 }
 
 EAnalysis::EAnalysis(ULONG dwVBase)
 {
-	AddSection(dwVBase);
+	UpdateSection(dwVBase);
 }
 
 EAnalysis::~EAnalysis()
 {
-
+	for (UINT n = 0;n < SectionMap.size();n++) {
+		VirtualFree(SectionMap[n].SectionAddr, 0, MEM_RELEASE);
+	}
 }
 
 BOOL EAnalysis::EStaticLibInit() {    //易语言静态编译 识别初始化
@@ -66,7 +102,6 @@ BOOL EAnalysis::EStaticLibInit() {    //易语言静态编译 识别初始化
 	BYTE SearchCode[17] = { 0x50,0x64,0x89,0x25,0x00,0x00,0x00,0x00,
 						  0x81,0xEC,0xAC,0x01,0x00,0x00,0x53,0x56,0x57 };
 
-	
 	dwResult = Search_Bin(SectionMap[0].SectionAddr, SearchCode, SectionMap[0].dwSize, sizeof(SearchCode));
 
 	if (dwResult == 0)
@@ -81,7 +116,7 @@ BOOL EAnalysis::EStaticLibInit() {    //易语言静态编译 识别初始化
 
 	if (EntryAddr - SectionMap[0].dwBase > SectionMap[0].dwSize)  //如果入口地址在另一个区段,则添加一份表
 	{
-		UINT index=AddSection(EntryAddr);
+		int index = UpdateSection(EntryAddr);
 		pEnteyInfo = (PEENTRYINFO)O2V(EntryAddr, index);
 	}
 	else {

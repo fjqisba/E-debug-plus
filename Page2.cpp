@@ -81,7 +81,7 @@ BOOL CPage2::OnInitDialog() {
 	int nPos = 0;
 
 	if (pEAnalysisEngine->pEnteyInfo->pLibName == 0) {
-		pMaindlg->outputInfo("->  DllCmd个数为0...");
+		//pMaindlg->outputInfo("->  DllCmd个数为0...");
 		return true;
 	}
 
@@ -149,8 +149,8 @@ BOOL CPage2::OnInitDialog() {
 		m_api.SetItemText(n, 3,order);
 	}
 
-	pMaindlg->outputInfo("->  获取易语言<DllCmd>完毕...");
-	pMaindlg->outputInfo("->  Bug反馈: https://github.com/fjqisba/E-debug-plus");
+	//pMaindlg->outputInfo("->  获取易语言<DllCmd>完毕...");
+	//pMaindlg->outputInfo("->  Bug反馈: https://github.com/fjqisba/E-debug-plus");
 	return true;
 }
 
@@ -181,15 +181,15 @@ void CPage2::On32771()  //DLL命令查找引用
 		return;
 	}
 
-	pMaindlg->m_output.ResetContent();
-	pMaindlg->outputInfo("-> 执行命令   --==查找引用==--");
+	//pMaindlg->m_output.ResetContent();
+	//pMaindlg->outputInfo("-> 执行命令   --==查找引用==--");
 
-	int order = m_api.GetItemData(nPos);  //得到真实的序号
-	
-	for (UINT n = 0;n < m_map[order].size();n++) {
-		int index = pMaindlg->outputInfo("%08X    mov eax,%08X     %s", m_map[order][n], order, W2A(m_api.GetItemText(nPos,2))); //显示出结果地址
-		pMaindlg->m_output.SetItemData(index, m_map[order][n]);
-	}
+	//int order = m_api.GetItemData(nPos);  //得到真实的序号
+	//
+	//for (UINT n = 0;n < m_map[order].size();n++) {
+	//	int index = pMaindlg->outputInfo("%08X    mov eax,%08X     %s", m_map[order][n], order, W2A(m_api.GetItemText(nPos,2))); //显示出结果地址
+	//	pMaindlg->m_output.SetItemData(index, m_map[order][n]);
+	//}
 }
 
 static int CALLBACK CompareOrder(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
@@ -203,6 +203,7 @@ static int CALLBACK CompareOrder(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSo
 }
 
 static int CALLBACK CompareLib(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
+	
 	CString C1 = pMaindlg->m_page2.m_api.GetItemText(static_cast<int>(lParam1), 1);
 	CString C2 = pMaindlg->m_page2.m_api.GetItemText(static_cast<int>(lParam2), 1);
 
@@ -226,7 +227,8 @@ static int CALLBACK CompareCmd(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort
 }
 
 static int CALLBACK CompareCount(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	return _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam1, 3)) > _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam2, 3));
+	return 1;
+	//return _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam1, 3)) > _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam2, 3));
 }
 
 void CPage2::OnLvnColumnclickListapi(NMHDR *pNMHDR, LRESULT *pResult)   //排序

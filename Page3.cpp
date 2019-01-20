@@ -7,8 +7,8 @@
 #include "MainWindow.h"
 #include "EAnalyEngine.h"
 
-extern 	CMainWindow *pMaindlg;
-extern  EAnalysis	*pEAnalysisEngine;
+
+
 
 // CPage3 ¶Ô»°¿ò
 

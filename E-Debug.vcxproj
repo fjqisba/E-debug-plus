@@ -185,6 +185,7 @@
     <ClCompile Include="E-Debug.cpp" />
     <ClCompile Include="EAnalyEngine.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="Page0.cpp" />
     <ClCompile Include="Page1.cpp" />
     <ClCompile Include="Page2.cpp" />
     <ClCompile Include="Page3.cpp" />
@@ -194,11 +195,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TrieTree.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="E-Debug.h" />
     <ClInclude Include="EAnalyEngine.h" />
     <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="Page0.h" />
     <ClInclude Include="Page1.h" />
     <ClInclude Include="Page2.h" />
     <ClInclude Include="Page3.h" />

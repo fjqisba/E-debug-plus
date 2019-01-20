@@ -36,13 +36,16 @@ public:
 	EAnalysis(ULONG dwVBase);
 	~EAnalysis();
 	
+	UINT AnalysisMode;
+
 	BOOL EStaticLibInit();     //静态编译--初始化
 	BOOL GetUserEntryPoint();  //静态编译--取用户结束地址
 
-	UINT FindOriginSection(ULONG addr);		//寻找地址是否在区段表中,返回index
-	UINT FindVirutalSection(ULONG addr);	//寻找地址是否在申请的地址中,返回index
+	INT FindOriginSection(ULONG addr);		//寻找地址是否在区段表中,返回index
+	INT FindVirutalSection(ULONG addr);	//寻找地址是否在申请的地址中,返回index
 
-	UINT AddSection(DWORD addr);  //内存拷贝表中增加区段,返回新的index
+	INT UpdateSection(DWORD addr);	
+	INT AddSection(DWORD addr);  //内存拷贝表中增加区段,返回新的index
 
 	DWORD   Search_BinEx(byte *pSrc, byte *pTrait, int nSrcLen, int nTraitLen);
 	DWORD	O2V(DWORD dwVaddr, UINT index);		//原始地址转换为虚拟地址

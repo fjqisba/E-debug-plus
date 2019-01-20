@@ -39,6 +39,12 @@
     <ClCompile Include="Page3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Page0.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TrieTree.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="E-Debug.h">
@@ -69,6 +75,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="TrieTree.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Page0.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

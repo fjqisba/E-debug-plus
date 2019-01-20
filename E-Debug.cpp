@@ -6,10 +6,11 @@ E-debug   DLL与OD的交互接口
 #include "E-Debug.h"
 #include "MainWindow.h"
 
-HINSTANCE g_hInstace;
-vector<EsigInfo> EsigList;
+HINSTANCE g_hInstace;		//一份E-debug对应一份hInstace
+vector<EsigInfo> EsigList;  //一份E-debug对应一份EsigList
 
-BOOL LoadSig(char* lpMapPath,char* Category) {
+
+BOOL LoadSig(char* lpMapPath,char* Category) {		//读取信息至EsigList
 	HANDLE hFile = CreateFileA(lpMapPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (hFile == INVALID_HANDLE_VALUE)
@@ -51,9 +52,10 @@ BOOL LoadSig(char* lpMapPath,char* Category) {
 }
 
 BOOL EnumEsig() {
-	if (EsigList.size()) {
+	EsigList.clear();
+	/*if (EsigList.size()) {		//只读取一次就够了
 		return true;
-	}
+	}*/
 
 	char path[256] = {};
 	strcpy_s(path, DIRECTORY);strcat_s(path, "\\plugin\\esig\\*.*");
@@ -107,7 +109,7 @@ extc int _export cdecl ODBG_Plugininit(int ollydbgversion, HWND hw, DWORD *featu
 		Addtolist(0, 0, "提示: 插件版本与OD不匹配!");
 		return -1;
 	}
-	Addtolist(0, 0, "%s", "E-Debug Plus 1.15");
+	Addtolist(0, 0, "%s", "E-Debug Plus 1.2");
 	Addtolist(0, -1, "%s","  by:fjqisba");
 
 	//在这里修复一个OD 界面选项BUG
@@ -145,10 +147,10 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		}
 		else if (action == 0)
 		{
-			AnalysisMode = StaticMode;
+			//AnalysisMode = StaticMode;
 		}
 		else if (action == 1) {
-			AnalysisMode = CMode;
+			//AnalysisMode = CMode;
 			//return; //To Be Continued
 		}
 
@@ -160,9 +162,9 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 
 		EnumEsig();
 		
-		CMainWindow *pMainDlg = new CMainWindow;
-		pMainDlg->Create(IDD_MainWindow, NULL);
-		pMainDlg->ShowWindow(SW_SHOW);
+		CMainWindow* pWindow = new CMainWindow;	//建立临时的窗口指针
+		pWindow->Create(IDD_MainWindow, NULL);
+		pWindow->ShowWindow(SW_SHOW);
 		return;
 	}
 

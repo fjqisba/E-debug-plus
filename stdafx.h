@@ -39,5 +39,6 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <afxcontrolbars.h>
 
 using namespace std;

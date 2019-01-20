@@ -22,11 +22,8 @@ struct EsigInfo
 声明全局变量
 ————————————————————————————*/
 extern char DIRECTORY[MAX_PATH];  //插件目录
-extern UINT AnalysisMode;		//当前选择的分析模式
 extern vector<EsigInfo> EsigList;
-
-
-
+extern HINSTANCE g_hInstace;
 
 /*————————————————————————————
 以下是一些基础函数,能放在这里的函数尽量放在这里

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "E-Debug.h"
 
 typedef struct LIBMAP
@@ -32,6 +31,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	CDialog* GetHwnd();
 	virtual BOOL OnInitDialog();
 	BOOL MatchCode_FAST(UCHAR* FuncSrc, UCHAR* BinCode, int length);  //参数一与参数二对比,参数三为对比长度
 	bool MatchCode_UnEx(unsigned char* pSrc1, unsigned char* pSrc2, int nLen);//

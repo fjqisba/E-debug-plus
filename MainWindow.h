@@ -1,8 +1,14 @@
 #pragma once
 
+#include "EAnalyEngine.h"
+#include "Page0.h"
 #include "Page1.h"
 #include "Page2.h"
 #include "Page3.h"
+
+
+
+extern EAnalysis   *pEAnalysisEngine;	//与窗口所绑定的分析引擎
 
 class CMainWindow : public CDialog
 {
@@ -21,10 +27,14 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
 	DECLARE_MESSAGE_MAP()
+
 public:
+
 	BOOL Initsucceed;  //为假则退出流程
 	virtual BOOL OnInitDialog();
 	CTabCtrl m_Tab;
+
+	CPage0 m_page0;
 	CPage1 m_page1;
 	CPage2 m_page2;
 	CPage3 m_page3;
