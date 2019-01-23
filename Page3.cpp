@@ -202,7 +202,6 @@ BOOL CPage3::OnInitDialog() {
 		EipAddr = EipAddr + 4;
 		Window[i].ControlSize= *(unsigned long*)pEAnalysisEngine->O2V(EipAddr,r_index);   //得到控件总大小
 		
-		
 		for (UINT j = 0;j < Window[i].ControlCount;j++) {
 			EipAddr = EipAddr + 4;
 			ControlID.Format(L"0x%X", *(unsigned long*)pEAnalysisEngine->O2V(EipAddr, r_index));

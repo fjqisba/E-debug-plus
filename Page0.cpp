@@ -132,6 +132,7 @@ void CPage0::On32772()	//Ó¦ÓÃÌØÕ÷
 
 		TrieTree Tree;
 		Tree.LoadSig(info.Path.c_str());
+		
 		Tree.ScanSig(pEAnalysisEngine->SectionMap[0].SectionAddr, pEAnalysisEngine->SectionMap[0].dwSize, info.Name);
 
 

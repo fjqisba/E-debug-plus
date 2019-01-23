@@ -54,7 +54,6 @@ END_MESSAGE_MAP()
 BOOL CPage2::OnInitDialog() {
 	CDialog::OnInitDialog();
 
-	
 	LONG lStyle;
 
 	lStyle = GetWindowLong(m_api.m_hWnd, GWL_STYLE);//获取当前窗口style

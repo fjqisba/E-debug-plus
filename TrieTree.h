@@ -10,7 +10,7 @@
 #define TYPE_JMPAPI 3	       //      []
 #define TYPE_CALLAPI 4	      //      <[]>
 
-#define TYPE_PUSH   6	      //      !!
+#define TYPE_CONSTANT   6	      //      !!
 #define TYPE_LEFTPASS 11      //      ?
 #define TYPE_RIGHTPASS 12     //       ?
 #define TYPE_ALLPASS   13     //      ??
@@ -59,7 +59,7 @@ public:
 
 protected:
 	BOOL Insert(string& FuncTxt, const string& FuncName);		//插入函数,节点的函数名必须唯一！
-	BOOL CmpCall(UCHAR* FuncSrc, string& FuncTxt);				//低配版匹配函数法,用于匹配子函数
+	BOOL CmpCode(UCHAR* FuncSrc, string& FuncTxt);				//低配版匹配函数法,用于匹配子函数,此函数尚未解决递归问题
 
 private:
 	TrieTreeNode* root;
@@ -69,16 +69,16 @@ private:
 	
 
 	void Destroy(TrieTreeNode* p);
-	char* Match(TrieTreeNode*p, UCHAR* FuncSrc);		//参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
+	char* Match(const TrieTreeNode*p, UCHAR* FuncSrc);		//参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
 
 	BOOL IsAligned=false;
 	
 	
 	map<string, string> m_subFunc;	//子函数,函数名称和函数文本一一映射
-	map<ULONG,string> m_RFunc;  //R代表Runtime,运行时记录函数,永远记住 地址和函数名称是一一映射的！不要试图一个地址多个函数名称
+
+	//地址和函数名称一一映射
+	map<ULONG, string> m_RFunc;  //R代表Runtime,运行时记录实际地址对应函数,不要试图一个地址多个函数名称 ,参数一为实际内存地址,参数二为对应名称
 };
-
-
 
 
 

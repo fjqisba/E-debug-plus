@@ -130,7 +130,7 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 	for (UINT n = 0;n < FuncTxt.length();n++) {
 		switch (FuncTxt[n])
 		{
-		case '-':
+		case '-':	//Check 1次
 			if (FuncTxt[n + 1] == '-' && FuncTxt[n + 2] == '>')
 			{
 				p = AddSpecialNode(p, TYPE_LONGJMP, "");
@@ -186,15 +186,15 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 				n = n + 1;
 				continue;
 			}
-		case '!':
+		case '!':	//验证1次
 		{
-			int post = FuncTxt.find('!', n);
+			int post = FuncTxt.find('!', n + 1);	//从!的下一个字符开始寻找!
 			if (post == -1) {
 				return false;
 			}
-			SpecialTxt = FuncTxt.substr(n, post - n + 1);
-			p = AddSpecialNode(p, TYPE_PUSH, SpecialTxt);
-			n = post;
+			SpecialTxt = FuncTxt.substr(n + 1, post - n - 1);
+			p = AddSpecialNode(p, TYPE_CONSTANT, SpecialTxt);
+			n = post;	//将当前指针指向右边的!号
 			continue;
 		}
 		default:
@@ -216,7 +216,7 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 		MessageBoxA(NULL, p->FuncName, "发现相同函数", 0);
 		return false;
 	}
-
+	
 	p->FuncName = new char[FuncName.length() + 1];strcpy_s(p->FuncName, FuncName.length() + 1, FuncName.c_str());
 	return true;
 }
@@ -249,7 +249,7 @@ TrieTreeNode* TrieTree::AddSpecialNode(TrieTreeNode* p, UINT type, string Txt) {
 	return NewNode;
 }
 
-BOOL TrieTree::CmpCall(UCHAR* FuncSrc, string& FuncTxt) {
+BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 	USES_CONVERSION;
 	UCHAR* pSrc = FuncSrc;  //初始化函数代码指针
 
@@ -328,7 +328,7 @@ BOOL TrieTree::CmpCall(UCHAR* FuncSrc, string& FuncTxt) {
 				if (pEAnalysisEngine->FindVirutalSection(addr) == -1) {		//这种方法可能有一定的不稳定性
 					return false;	//暂时不支持CALL其它区段代码
 				}
-				if (CmpCall((UCHAR*)addr, m_subFunc[SubFunc])) {
+				if (CmpCode((UCHAR*)addr, m_subFunc[SubFunc])) {
 					pSrc = pSrc + 5;
 					n = post;
 					m_RFunc[addr] = SubFunc;
@@ -409,7 +409,7 @@ BOOL TrieTree::CmpCall(UCHAR* FuncSrc, string& FuncTxt) {
 	return true;
 }
 
-char* TrieTree::Match(TrieTreeNode* p, UCHAR* FuncSrc) {
+char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
 	if (p->FuncName) {		//如果成功寻找到函数,且未曾匹配过则返回结果   --存在相同地址的不同函数,这将导致第一个函数匹配成功,第二个函数匹配失败
 		return p->FuncName;
 	}
@@ -433,23 +433,25 @@ char* TrieTree::Match(TrieTreeNode* p, UCHAR* FuncSrc) {
 			}
 			return Match(p->SpecialNodes[i], FuncSrc);
 		}
-		case TYPE_CALL:
+		case TYPE_CALL:		//Check 1次
 		{
 			if (*FuncSrc != 0xE8) {
 				continue;
 			}
 			DWORD offset = *(DWORD*)(FuncSrc + 1);
-			DWORD CallSrc = (ULONG)FuncSrc + offset + 5;
+			ULONG CallSrc = (ULONG)FuncSrc + offset + 5;	//得到虚拟地址
 
-			if (pEAnalysisEngine->FindVirutalSection(CallSrc) == -1) {		//CALL到其它区段
-				continue;;	//暂时当做失败
+			ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc));	//得到真实地址
+
+			if (pEAnalysisEngine->FindOriginSection(oaddr) == -1 && pEAnalysisEngine->AddSection(oaddr) == -1) {
+				continue;
 			}
-
-			if (m_RFunc[(ULONG)CallSrc] == p->SpecialNodes[i]->EsigText) {	//此函数已经匹配过一次
+			
+			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {						//此函数已经匹配过一次
 				return Match(p->SpecialNodes[i], FuncSrc + 5);
 			}
-
-			if (CmpCall((UCHAR*)CallSrc, m_subFunc[p->SpecialNodes[i]->EsigText])) {	//可以和上面的判断合并
+	
+			if (CmpCode((UCHAR*)CallSrc, m_subFunc[p->SpecialNodes[i]->EsigText])) {	//可以和上面的判断合并
 				return Match(p->SpecialNodes[i], FuncSrc + 5);
 			}
 			continue;
@@ -519,6 +521,23 @@ char* TrieTree::Match(TrieTreeNode* p, UCHAR* FuncSrc) {
 			}
 			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
 				return Match(p->SpecialNodes[i], FuncSrc + 6);
+			}
+			continue;
+		}
+		case TYPE_CONSTANT:		//Check 2次
+		{
+			ULONG ConSrc = *(ULONG*)FuncSrc;	//取得实际地址
+
+			ULONG ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
+			if (pEAnalysisEngine->FindOriginSection(ConSrc) == -1) {		//在区段外则添加区段
+				ConIndex = pEAnalysisEngine->AddSection(ConSrc);
+				if (ConIndex == -1) {
+					pMaindlg->outputInfo("Type_Constant申请内存失败");
+					continue;
+				}
+			}
+			if (m_RFunc[ConSrc] == p->SpecialNodes[i]->EsigText || CmpCode((UCHAR*)pEAnalysisEngine->O2V(ConSrc, ConIndex), m_subFunc[p->SpecialNodes[i]->EsigText])) {
+				return Match(p->SpecialNodes[i], FuncSrc + 4);
 			}
 			continue;
 		}

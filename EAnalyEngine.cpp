@@ -9,9 +9,19 @@ E-debug   为分析易语言结构体提供支持的分析引擎
 extern CMainWindow *pMaindlg;
 EAnalysis	*pEAnalysisEngine;
 
+INT EAnalysis::MakeSureInValidSection(ULONG referaddr,ULONG virtualaddr){
+	int index = FindVirutalSection(referaddr);	//取得当前参照区间的index
+
+	ULONG oaddr = V2O(virtualaddr, index);
+	if (FindOriginSection(oaddr) == -1) {		//转换为实际地址后再判断
+		return AddSection(oaddr);	
+	}
+	return index;	
+}
+
 INT EAnalysis::FindVirutalSection(ULONG addr) {		//备用
 	for (UINT i = 0;i < SectionMap.size();i++) {
-		if (addr >= (DWORD)SectionMap[i].SectionAddr && addr < ((DWORD)SectionMap[i].SectionAddr + SectionMap[i].dwSize)) {
+		if (addr >= (ULONG)SectionMap[i].SectionAddr && addr < ((ULONG)SectionMap[i].SectionAddr + SectionMap[i].dwSize)) {
 			return i;
 		}
 	}
@@ -27,7 +37,7 @@ INT EAnalysis::FindOriginSection(ULONG addr) {
 	return -1;
 }
 
-INT EAnalysis::UpdateSection(DWORD addr) {
+INT EAnalysis::UpdateSection(ULONG addr) {
 	INT index = FindOriginSection(addr);
 	t_memory* T_memory;
 	if (index != -1) {		//已经拷贝过一次页面也要重新拷贝一次
@@ -39,7 +49,7 @@ INT EAnalysis::UpdateSection(DWORD addr) {
 		}
 		SectionMap[index].dwBase = T_memory->base;
 		SectionMap[index].dwSize = T_memory->size;
-		SectionMap[index].SectionAddr = (BYTE *)VirtualAlloc(NULL, SectionMap[index].dwSize, MEM_COMMIT, PAGE_READWRITE);
+		SectionMap[index].SectionAddr = (UCHAR *)VirtualAlloc(NULL, SectionMap[index].dwSize, MEM_COMMIT, PAGE_READWRITE);
 		if (!SectionMap[index].SectionAddr) {
 			pMaindlg->outputInfo("申请内存失败!");
 			return -1;
@@ -54,7 +64,7 @@ INT EAnalysis::UpdateSection(DWORD addr) {
 	return AddSection(addr);
 }
 
-INT EAnalysis::AddSection(DWORD addr) {
+INT EAnalysis::AddSection(ULONG addr) {
 
 	sectionAlloc addsection;
 	t_memory* T_memory;
@@ -148,13 +158,13 @@ BOOL EAnalysis::GetUserEntryPoint() {
 }
 
 
-DWORD EAnalysis::O2V(DWORD dwOaddr, UINT index)  //实际地址到虚拟地址
+ULONG EAnalysis::O2V(ULONG dwOaddr, UINT index)  //实际地址到虚拟地址
 {
-	return dwOaddr - SectionMap[index].dwBase + (DWORD)SectionMap[index].SectionAddr;
+	return dwOaddr + (ULONG)SectionMap[index].SectionAddr - SectionMap[index].dwBase;
 }
-DWORD EAnalysis::V2O(DWORD dwVaddr, UINT index) //虚拟地址到实际地址
+ULONG EAnalysis::V2O(ULONG dwVaddr, UINT index) //虚拟地址到实际地址
 {
-	return dwVaddr - (DWORD)SectionMap[index].SectionAddr + SectionMap[index].dwBase;
+	return dwVaddr + (ULONG)SectionMap[index].dwBase - (ULONG)SectionMap[index].SectionAddr;
 }
 
 

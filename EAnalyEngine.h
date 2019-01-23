@@ -6,9 +6,9 @@
 
 typedef struct sectionAlloc		//内存拷贝
 {
-	BYTE* SectionAddr;  //申请的内存空间地址
-	DWORD dwBase;       //原始代码区段的基址
-	DWORD dwSize;       //原始代码区段的大小
+	UCHAR* SectionAddr;  //申请的内存空间地址,格式设定为UCHAR* 更好一点
+	ULONG  dwBase;       //原始代码区段的基址
+	ULONG  dwSize;       //原始代码区段的大小
 }*psectionAlloc;
 
 typedef struct _ENTRYINFO // 易语言入口信息
@@ -44,12 +44,14 @@ public:
 	INT FindOriginSection(ULONG addr);		//寻找地址是否在区段表中,返回index
 	INT FindVirutalSection(ULONG addr);	//寻找地址是否在申请的地址中,返回index
 
-	INT UpdateSection(DWORD addr);	
-	INT AddSection(DWORD addr);  //内存拷贝表中增加区段,返回新的index
+	INT MakeSureInValidSection(ULONG referaddr,ULONG virtualaddr);		//确保得到的地址在合法区间内
+		
+	INT UpdateSection(ULONG addr);	
+	INT AddSection(ULONG addr);  //内存拷贝表中增加区段,返回新的index
 
 	DWORD   Search_BinEx(byte *pSrc, byte *pTrait, int nSrcLen, int nTraitLen);
-	DWORD	O2V(DWORD dwVaddr, UINT index);		//原始地址转换为虚拟地址
-	DWORD	V2O(DWORD dwOaddr, UINT index);		//虚拟地址转换为原始地址
+	ULONG	O2V(ULONG dwVaddr, UINT index);		//原始地址转换为虚拟地址
+	ULONG	V2O(ULONG dwOaddr, UINT index);		//虚拟地址转换为原始地址
 
 
 	DWORD	GetPoint(DWORD dwAddr);
