@@ -19,6 +19,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	CDialog* GetHwnd();
 	virtual BOOL OnInitDialog();
 	CListCtrl m_api;
 	map <int, vector<DWORD>> m_map;//¼üÎªº¯ÊýÐòºÅ

@@ -139,12 +139,15 @@ void CPage0::On32772()	//应用特征
 		UINT Pos = 0;
 
 		CString LibStr;
-		LibStr.Format(L"----->%s(命令总数:%d)", A2W(info.Name.c_str()), m_LibMap[info.Name].Command_addr.size());
-		pMaindlg->m_page1.m_lib.InsertItem(Pos, LibStr);Pos++;
 
-		LibStr.Format(L"         %s", A2W(info.Description.c_str()));
-		pMaindlg->m_page1.m_lib.InsertItem(Pos, LibStr);Pos++;
-		pMaindlg->m_page1.m_lib.InsertItem(Pos, L"――――――――――――――――――――――――");Pos++;
+		if (m_LibMap[info.Name].Command_addr.size() != 0) {		
+			LibStr.Format(L"%s(命令总数:%d)", A2W(info.Name.c_str()), m_LibMap[info.Name].Command_addr.size());
+			pMaindlg->m_page1.m_lib.InsertItem(Pos, LibStr);Pos++;
+
+			LibStr.Format(L"   %s", A2W(info.Description.c_str()));
+			pMaindlg->m_page1.m_lib.InsertItem(Pos, LibStr);Pos++;
+			pMaindlg->m_page1.m_lib.InsertItem(Pos, L"――――――――――――――――――――――――");Pos++;
+		}
 
 		m_List.SetItemText(nPos, 1, L"已应用");
 		nPos = m_List.GetNextItem(nPos, LVNI_SELECTED);	

@@ -69,8 +69,8 @@ private:
 	
 
 	void Destroy(TrieTreeNode* p);
-	char* Match(const TrieTreeNode*p, UCHAR* FuncSrc);		//参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
-
+	char* Match(const TrieTreeNode*p, UCHAR* FuncSrc);			//参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
+	char* MatchSpecial(const TrieTreeNode*p, UCHAR* FuncSrc);   //特殊节点版
 	BOOL IsAligned=false;
 	
 	

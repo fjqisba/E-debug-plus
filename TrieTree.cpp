@@ -409,54 +409,61 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 	return true;
 }
 
-char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
-	if (p->FuncName) {		//如果成功寻找到函数,且未曾匹配过则返回结果   --存在相同地址的不同函数,这将导致第一个函数匹配成功,第二个函数匹配失败
-		return p->FuncName;
-	}
-
-	if (p->ChildNodes[*FuncSrc]) {
-		return Match(p->ChildNodes[*FuncSrc], FuncSrc + 1);
-	}
-
+char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
+	
 	for (UINT i = 0;i < p->SpecialNodes.size();i++) {
 		switch (p->SpecialNodes[i]->SpecialType)
 		{
-		case TYPE_LONGJMP:
+		case TYPE_LONGJMP:	//Check 1次
 		{
 			if (*FuncSrc != 0xE9) {
 				continue;
 			}
-			DWORD offset = *(DWORD*)(FuncSrc + 1);
-			FuncSrc = FuncSrc + offset + 5;
-			if (pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc) == -1) {	//跳转到其它区段
-				continue;;	//暂时当做失败
+			ULONG JmpSrc = (ULONG)FuncSrc + *(DWORD*)(FuncSrc + 1) + 5;	//先取得jmp的虚拟地址
+
+			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
+
+			ULONG oaddr = pEAnalysisEngine->V2O(JmpSrc, BaseIndex);	//转换为实际代码中的地址
+
+			INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//判断跳转是否合理
+			if (index == -1) {
+				index = pEAnalysisEngine->AddSection(oaddr);
+				if (index == -1) {
+					pMaindlg->outputInfo("Jmp地址错误！！！");
+					continue;
+				}
 			}
-			return Match(p->SpecialNodes[i], FuncSrc);
+			return Match(p->SpecialNodes[i], (UCHAR*)pEAnalysisEngine->O2V(oaddr, index));
 		}
-		case TYPE_CALL:		//Check 1次
+		case TYPE_CALL:		//Check 2次
 		{
 			if (*FuncSrc != 0xE8) {
 				continue;
 			}
-			DWORD offset = *(DWORD*)(FuncSrc + 1);
-			ULONG CallSrc = (ULONG)FuncSrc + offset + 5;	//得到虚拟地址
+			ULONG CallSrc = (ULONG)FuncSrc + *(DWORD*)(FuncSrc + 1) + 5;	//得到虚拟地址
 
-			ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc));	//得到真实地址
+			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
 
-			if (pEAnalysisEngine->FindOriginSection(oaddr) == -1 && pEAnalysisEngine->AddSection(oaddr) == -1) {
-				continue;
-			}
-			
-			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {						//此函数已经匹配过一次
+			ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, BaseIndex);	//转换为实际代码中的地址
+
+			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {		//此函数已经匹配过一次
 				return Match(p->SpecialNodes[i], FuncSrc + 5);
 			}
-	
-			if (CmpCode((UCHAR*)CallSrc, m_subFunc[p->SpecialNodes[i]->EsigText])) {	//可以和上面的判断合并
+
+			INT index = pEAnalysisEngine->FindOriginSection(oaddr);
+			if (index == -1) {		//CALL到其它区段了...
+				index = pEAnalysisEngine->AddSection(oaddr);
+				if (index == -1) {
+					//pMaindlg->outputInfo("CALL地址错误！！！");
+					continue;
+				}
+			}
+			if (CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->SpecialNodes[i]->EsigText])) {
 				return Match(p->SpecialNodes[i], FuncSrc + 5);
 			}
 			continue;
 		}
-		case TYPE_JMPAPI:
+		case TYPE_JMPAPI:	//Check 1次
 		{
 			if (*FuncSrc != 0xFF || *(FuncSrc + 1) != 0x25) {
 				continue;
@@ -484,13 +491,16 @@ char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			int index = pEAnalysisEngine->FindOriginSection(addr);
 			if (index == -1) {
 				index = pEAnalysisEngine->AddSection(addr);
+				if (index == -1) {
+					continue;
+				}
 			}
 			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
 				return Match(p->SpecialNodes[i], FuncSrc + 6);
 			}
 			continue;
 		}
-		case TYPE_CALLAPI:		//有问题
+		case TYPE_CALLAPI:		//Check 1次
 		{
 			if (*FuncSrc != 0xFF || *(FuncSrc + 1) != 0x15) {
 				continue;
@@ -511,15 +521,21 @@ char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
 				IATCom = IATEAT;
 				EATCom = IATEAT.substr(IATEAT.find('.') + 1);
 			}
-			ULONG addr = *(ULONG*)(FuncSrc + 2);
-			if (Findname(addr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {  //首先IAT匹配
+
+			ULONG oaddr = *(ULONG*)(FuncSrc + 2);			//得到IAT函数的真实地址
+			if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {		//首先IAT匹配
 				return Match(p->SpecialNodes[i], FuncSrc + 6);
 			}
-			int index = pEAnalysisEngine->FindOriginSection(addr);
+
+			INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//寻找地址所在index
 			if (index == -1) {
-				index = pEAnalysisEngine->AddSection(addr);
+				index = pEAnalysisEngine->AddSection(oaddr);
+				if (index == -1) {
+					continue;
+				}
 			}
-			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
+
+			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(oaddr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
 				return Match(p->SpecialNodes[i], FuncSrc + 6);
 			}
 			continue;
@@ -528,8 +544,8 @@ char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
 		{
 			ULONG ConSrc = *(ULONG*)FuncSrc;	//取得实际地址
 
-			ULONG ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
-			if (pEAnalysisEngine->FindOriginSection(ConSrc) == -1) {		//在区段外则添加区段
+			INT ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
+			if (ConIndex == -1) {		//在区段外则添加区段
 				ConIndex = pEAnalysisEngine->AddSection(ConSrc);
 				if (ConIndex == -1) {
 					pMaindlg->outputInfo("Type_Constant申请内存失败");
@@ -551,8 +567,21 @@ char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
 	//if ((p->SpecialNodes[i]->EsigText[0] == '?' || HByteToBin(p->SpecialNodes[i]->EsigText[0])==*(FuncSrc)>>4) &&(p->SpecialNodes[i]->EsigText[1] == '?'|| HByteToBin(p->SpecialNodes[i]->EsigText[1]) == *(FuncSrc)& 0x0F)) {		//第一个是通配符
 	//	return Match(p->SpecialNodes[i], FuncSrc + 1);		//继续匹配下一层
 	//}
-	return NULL;	//全部的特殊节点都匹配失败才算失败
+	return NULL;
+}
 
+char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
+	if (p->FuncName) {		//如果成功寻找到函数,且未曾匹配过则返回结果   --存在相同地址的不同函数,这将导致第一个函数匹配成功,第二个函数匹配失败
+		return p->FuncName;
+	}
+
+	if (p->ChildNodes[*FuncSrc]) {
+		return Match(p->ChildNodes[*FuncSrc], FuncSrc + 1);
+	}
+	else {
+		return MatchSpecial(p, FuncSrc);
+	}
+	return NULL;
 }
 
 void TrieTree::Destroy(TrieTreeNode* p) {

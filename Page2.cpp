@@ -50,6 +50,9 @@ END_MESSAGE_MAP()
 // CPage2 消息处理程序
 
 
+CDialog* CPage2::GetHwnd() {
+	return this;
+}
 
 BOOL CPage2::OnInitDialog() {
 	CDialog::OnInitDialog();
@@ -71,6 +74,8 @@ BOOL CPage2::OnInitDialog() {
 	m_api.InsertColumn(2, L"命令名称", LVCFMT_CENTER, 280);
 	m_api.InsertColumn(3, L"引用次数", LVCFMT_CENTER, 80);
 
+
+	return true;
 	USES_CONVERSION;
 	char *pszLibname;
 	char *pszApiname;

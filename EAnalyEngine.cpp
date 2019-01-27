@@ -44,7 +44,7 @@ INT EAnalysis::UpdateSection(ULONG addr) {
 		VirtualFree(SectionMap[index].SectionAddr, 0, MEM_RELEASE);
 		T_memory = Findmemory(addr);
 		if (!T_memory) {
-			pMaindlg->outputInfo("查询内存失败!");
+			//pMaindlg->outputInfo("查询内存失败!");
 			return -1;
 		}
 		SectionMap[index].dwBase = T_memory->base;
@@ -71,7 +71,7 @@ INT EAnalysis::AddSection(ULONG addr) {
 
 	T_memory = Findmemory(addr);
 	if (!T_memory) {
-		pMaindlg->outputInfo("查询内存失败!");
+		//pMaindlg->outputInfo("查询内存失败!");
 		return -1;
 	}
 

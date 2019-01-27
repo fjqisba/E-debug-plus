@@ -12,6 +12,7 @@ E-debug   命令识别
 
 extern CMainWindow *pMaindlg;
 extern map<string, LIBMAP> m_LibMap;
+extern vector<CDialog*> Tab_HWND;	//窗口控件指针
 
 char DIRECTORY[MAX_PATH];
 static int addrtype;
@@ -81,153 +82,189 @@ BOOL CPage1::OnInitDialog() {
 	m_command.InsertColumn(0, L"地址", LVCFMT_LEFT, 65);
 	m_command.InsertColumn(1, L"命令名称", LVCFMT_CENTER, 205);
 
+	//————————————————————
+
+	if (pEAnalysisEngine->EStaticLibInit()) {		//检测到是易语言静态编译程序
+		
+		pEAnalysisEngine->AnalysisMode = StaticMode;
+		vector<string> krnlCmd =
+		{ "错误回调", "DLL命令", "三方支持库命令", "核心支持库命令",
+			"读取组件属性", "设置组件属性", "分配内存", "重新分配内存",
+			"释放内存", "结束", "窗口消息循环", "载入启动窗口", "初始化" };
+
+		Insertname(pEAnalysisEngine->dwUsercodeStart, NM_COMMENT, "用户代码段开始");
+
+		if (!pEAnalysisEngine->GetUserEntryPoint()) {
+			pEAnalysisEngine->dwUsercodeEnd = pEAnalysisEngine->SectionMap[0].dwBase + pEAnalysisEngine->SectionMap[0].dwSize - 1;
+		}
+		else {
+			INT nPos = pMaindlg->outputInfo("->  易语言程序入口 : %08X     ", pEAnalysisEngine->dwUsercodeEnd);
+			pMaindlg->m_output.SetItemData(nPos, pEAnalysisEngine->dwUsercodeEnd);
+			Insertname(pEAnalysisEngine->dwUsercodeEnd, NM_COMMENT, "易语言程序入口");
+		}
+
+		DWORD	dwKrnlEntry = pEAnalysisEngine->pEnteyInfo->dwEString;
+		if (dwKrnlEntry == 0) {
+			dwKrnlEntry = pEAnalysisEngine->pEnteyInfo->dwEWindow;
+		}
+		DWORD	dwPoint;
+
+		INT index = pEAnalysisEngine->UpdateSection(dwKrnlEntry);
+		for (int i = krnlCmd.size() - 1; i >= 0; i--)
+		{
+			dwKrnlEntry -= sizeof(DWORD);
+			dwPoint = pEAnalysisEngine->GetPoint(pEAnalysisEngine->O2V(dwKrnlEntry, index));
+			if (i == 1) {				//获取DLL命令调用地址
+				pEAnalysisEngine->DLLCALL = dwKrnlEntry;
+			}
+			Insertname(dwPoint, NM_LABEL, (char*)krnlCmd[i].c_str());
+		}
+
+
+
+		return true;
+	}
+	return true;
 	int			nPos = 0;
-	//DWORD		pFirst = pEAnalysisEngine->pEnteyInfo->pLibEntey;
+	DWORD		pFirst = pEAnalysisEngine->pEnteyInfo->pLibEntey;
 
 	PLIB_INFO	pLibInfo = NULL;
 	CString		strLib, strGuid;
 	CString		str;
 
+	INT r_index = pEAnalysisEngine->UpdateSection(pFirst);
+	Currentindex = r_index;
+	INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
+	for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
+	{
+		pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
+		string Name = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index);
+		string Guid = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index);
+		strLib.Format(L"---->%s (Ver:%1d.%1d)",
+			(CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index),
+			pLibInfo->m_nMajorVersion,
+			pLibInfo->m_nMinorVersion);
+		strGuid.Format(L"        %s", (CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index));
 
+		m_lib.InsertItem(nPos, strLib); nPos++;   //显示Lib名称(Ver:版本号)
+		m_lib.InsertItem(nPos, strGuid); nPos++;  //显示Lib的GUID
 
-	///*UINT r_index = pEAnalysisEngine->FindOriginSection(pFirst);
-	//if (r_index == -1) {
-	//	r_index = pEAnalysisEngine->AddSection(pFirst);
-	//}
+		str.Empty();
+		str.Format(L"   -> 调用命令 (总数:%d)", pLibInfo->m_nCmdCount); //显示调用命令总数
 
-	//Currentindex = r_index;
-	//INT ProgressAdd = 500 / pEAnalysisEngine->pEnteyInfo->dwLibNum;
-	//for (UINT i = 0; i < pEAnalysisEngine->pEnteyInfo->dwLibNum; i++)  //对于解析出来的每个支持库
-	//{
-	//	
-	//	pLibInfo = (PLIB_INFO)pEAnalysisEngine->O2V(pEAnalysisEngine->GetOriginPoint(pFirst, r_index), r_index);
-	//	string Name = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName,r_index);
-	//	string Guid = (char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index);
-	//	strLib.Format(L"---->%s (Ver:%1d.%1d)",
-	//		(CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szName, r_index),
-	//		pLibInfo->m_nMajorVersion,
-	//		pLibInfo->m_nMinorVersion);
-	//	strGuid.Format(L"        %s", (CString)(char*)pEAnalysisEngine->O2V((DWORD)pLibInfo->m_szGuid, r_index));
+		DWORD		pFunc = pEAnalysisEngine->O2V((DWORD)pLibInfo->m_pCmdsFunc, r_index);
+		DWORD		dwAddress;
 
-	//	m_lib.InsertItem(nPos, strLib); nPos++;   //显示Lib名称(Ver:版本号)
-	//	m_lib.InsertItem(nPos, strGuid); nPos++;  //显示Lib的GUID
+		char szLibVer[12] = { 0 };
+		wsprintfA(szLibVer, "\\%1d.%1d", pLibInfo->m_nMajorVersion, pLibInfo->m_nMinorVersion);
 
-	//	str.Empty();
-	//	str.Format(L"   -> 调用命令 (总数:%d)", pLibInfo->m_nCmdCount); //显示调用命令总数
+		char szDirectory[MAX_PATH] = {};
+		for (UINT n = 0;n < EsigList.size();n++) {
+			if (EsigList[n].Category != "易语言") {
+				continue;
+			}
+			if (EsigList[n].Name == Name && EsigList[n].Description==Guid) {
+				strcpy_s(szDirectory, EsigList[n].Path.c_str());
+				break;
+			}
+		}
+		
+		TrieTree	Tree = {};
+		
+		BOOL Sret = Tree.LoadSig(szDirectory);    //读取ESig文件
+		LIBMAP m_Libmap;
 
-	//	DWORD		pFunc = pEAnalysisEngine->O2V((DWORD)pLibInfo->m_pCmdsFunc, r_index);
-	//	DWORD		dwAddress;
+		m_Libmap.Command_addr.clear();
+		m_Libmap.Command_name.clear();
+		if (Sret == false) {    //如果读取不到Sig文件
+			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
+				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
+				m_Libmap.Command_addr.push_back(dwAddress);
+				m_Libmap.Command_name.push_back("Esig Not Founded");
+				pFunc += sizeof(int);
+			}
+		}
+		else {
+			for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
+				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
+				m_Libmap.Command_addr.push_back(dwAddress);
+				//MessageBoxA(NULL, "开始匹配", "123", 0);
+				char* FuncName = Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0));
+				if (FuncName) {
+					m_Libmap.Command_name.push_back(FuncName);
+					Insertname(dwAddress, NM_LABEL, FuncName);
+				}
+				else
+				{
+					m_Libmap.Command_name.push_back("Error");
+					Insertname(dwAddress, NM_LABEL, "未知命令");
+				}
+				pFunc += sizeof(int);
+			}
+			
+			
+			/*for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {     //对于程序中的每个命令,进行一次精确匹配
+				dwAddress = pEAnalysisEngine->GetPoint(pFunc);
+				m_Libmap.Command_addr.push_back(dwAddress);
+				BOOL bMatchCom = false;
+				map<string, string>::iterator it;
+				for(it=m_Func.begin();it!=m_Func.end();it++){
+					//pMaindlg->outputInfo("%s", it->first.c_str());
+					if (MatchCode((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0), it->second)) {
+						m_Libmap.Command_name.push_back(it->first);
+						Insertname(dwAddress, NM_LABEL,(char*)it->first.c_str());
+						bMatchCom = true;
+						m_Func.erase(it);
+						Progress(pMaindlg->promile = pMaindlg->promile + 1, "正在识别支持库命令...");
+						break;
+					}
 
-	//	char szLibVer[12] = { 0 };
-	//	wsprintfA(szLibVer, "\\%1d.%1d", pLibInfo->m_nMajorVersion, pLibInfo->m_nMinorVersion);
+				}
 
-	//	char szDirectory[MAX_PATH] = {};
-	//	for (UINT n = 0;n < EsigList.size();n++) {
-	//		if (EsigList[n].Category != "易语言") {
-	//			continue;
-	//		}
-	//		if (EsigList[n].Name == Name && EsigList[n].Description==Guid) {
-	//			strcpy_s(szDirectory, EsigList[n].Path.c_str());
-	//			break;
-	//		}
-	//	}
-	//	
-	//	TrieTree	Tree = {};
-	//	
-	//	BOOL Sret = Tree.LoadSig(szDirectory);    //读取ESig文件
-	//	LIBMAP m_Libmap;
+				if (!bMatchCom)
+				{
+					m_Libmap.Command_name.push_back("Error");
+					Insertname(dwAddress, NM_LABEL, "未知命令");
+				}
 
-	//	m_Libmap.Command_addr.clear();
-	//	m_Libmap.Command_name.clear();
-	//	if (Sret == false) {    //如果读取不到Sig文件
-	//		for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
-	//			dwAddress = pEAnalysisEngine->GetPoint(pFunc);
-	//			m_Libmap.Command_addr.push_back(dwAddress);
-	//			m_Libmap.Command_name.push_back("Esig Not Founded");
-	//			pFunc += sizeof(int);
-	//		}
-	//	}
-	//	else {
-	//		for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {
-	//			dwAddress = pEAnalysisEngine->GetPoint(pFunc);
-	//			m_Libmap.Command_addr.push_back(dwAddress);
-	//			//MessageBoxA(NULL, "开始匹配", "123", 0);
-	//			char* FuncName = Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0));
-	//			if (FuncName) {
-	//				m_Libmap.Command_name.push_back(FuncName);
-	//				Insertname(dwAddress, NM_LABEL, FuncName);
-	//			}
-	//			else
-	//			{
-	//				m_Libmap.Command_name.push_back("Error");
-	//				Insertname(dwAddress, NM_LABEL, "未知命令");
-	//			}
-	//			pFunc += sizeof(int);
-	//		}
-	//		
-	//		
-	//		/*for (int n = 0;n < pLibInfo->m_nCmdCount;n++) {     //对于程序中的每个命令,进行一次精确匹配
-	//			dwAddress = pEAnalysisEngine->GetPoint(pFunc);
-	//			m_Libmap.Command_addr.push_back(dwAddress);
-	//			BOOL bMatchCom = false;
-	//			map<string, string>::iterator it;
-	//			for(it=m_Func.begin();it!=m_Func.end();it++){
-	//				//pMaindlg->outputInfo("%s", it->first.c_str());
-	//				if (MatchCode((UCHAR*)pEAnalysisEngine->O2V(dwAddress, 0), it->second)) {
-	//					m_Libmap.Command_name.push_back(it->first);
-	//					Insertname(dwAddress, NM_LABEL,(char*)it->first.c_str());
-	//					bMatchCom = true;
-	//					m_Func.erase(it);
-	//					Progress(pMaindlg->promile = pMaindlg->promile + 1, "正在识别支持库命令...");
-	//					break;
-	//				}
+				pFunc += sizeof(int);
+			}*/
+			
+		}
 
-	//			}
+		m_map[nPos] = m_Libmap;
+		m_lib.InsertItem(nPos, str);nPos++;
+		m_lib.InsertItem(nPos, L"――――――――――――――――――――――――"); nPos++;
 
-	//			if (!bMatchCom)
-	//			{
-	//				m_Libmap.Command_name.push_back("Error");
-	//				Insertname(dwAddress, NM_LABEL, "未知命令");
-	//			}
+		Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "正在识别支持库...");
+		
+		pFirst += sizeof(DWORD);
+	}
+	
+	//———扫描基础特征码———
+	TrieTree Tree;
 
-	//			pFunc += sizeof(int);
-	//		}*/
-	//		
-	//	}
+	char szDirectory[MAX_PATH] = {};
+	StrCpyA(szDirectory, DIRECTORY);
+	strcat_s(szDirectory, "\\Plugin\\Esig\\Emain.Esig");
+	map<string, string> m_temp;
+	map<string, string> m_basic;
+	/*LoadSig(szDirectory, m_temp, m_basic);//获得Emain.Esig函数特征
+	ProgressAdd = 300 / m_basic.size();
+	
+	map<string, string>::iterator it;
 
-	//	m_map[nPos] = m_Libmap;
-	//	m_lib.InsertItem(nPos, str);nPos++;
-	//	m_lib.InsertItem(nPos, L"――――――――――――――――――――――――"); nPos++;
+	for (it = m_basic.begin();it != m_basic.end();it++) {
+		Tree.Insert(it->second,it->first);
+	}
 
-	//	Progress(pMaindlg->promile = pMaindlg->promile + ProgressAdd, "正在识别支持库...");
-	//	
-	//	pFirst += sizeof(DWORD);
-	//}
-	//
-	////———扫描基础特征码———
-	//TrieTree Tree;
+	Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);*/
 
-	//char szDirectory[MAX_PATH] = {};
-	//StrCpyA(szDirectory, DIRECTORY);
-	//strcat_s(szDirectory, "\\Plugin\\Esig\\Emain.Esig");
-	//map<string, string> m_temp;
-	//map<string, string> m_basic;
-	///*LoadSig(szDirectory, m_temp, m_basic);//获得Emain.Esig函数特征
-	//ProgressAdd = 300 / m_basic.size();
-	//
-	//map<string, string>::iterator it;
-
-	//for (it = m_basic.begin();it != m_basic.end();it++) {
-	//	Tree.Insert(it->second,it->first);
-	//}
-
-	//Tree.MatchSig((UCHAR*)pEAnalysisEngine->O2V(pEAnalysisEngine->dwUsercodeStart, 0), pEAnalysisEngine->dwUsercodeEnd - pEAnalysisEngine->dwUsercodeStart);*/
-
-	//Progress(1000, "正在扫描基础特征,请等待......");
-	//Progress(0, "");
-	//Infoline("识别命令完毕...");
-	//
-	//pMaindlg->outputInfo("->  分析易语言<KrnlLibCmd>&&<LibCmd>完毕...");*/
+	Progress(1000, "正在扫描基础特征,请等待......");
+	Progress(0, "");
+	Infoline("识别命令完毕...");
+	
+	pMaindlg->outputInfo("->  分析易语言<KrnlLibCmd>&&<LibCmd>完毕...");
 	return true;
 }
 
@@ -477,7 +514,7 @@ void CPage1::OnNMClickListlib(NMHDR *pNMHDR, LRESULT *pResult)		//显示出命令和地
 	if (Pos == -1) {
 		return;
 	}
-	Name=Name.substr(6,Pos-6);	//----->
+	Name=Name.substr(0,Pos);	
 	
 	m_command.DeleteAllItems();
 	CString		strAddress;
@@ -504,14 +541,14 @@ static int CALLBACK CompareAddr(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSor
 }
 
 static int CALLBACK CompareName(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	//if (lParamSort == 0) {          //按照文本ASCII比较
-	//	UCHAR x1 = *(UCHAR*)pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam1), 1).GetBuffer();
-	//	UCHAR x2 = *(UCHAR*)pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam2), 1).GetBuffer();
-	//	return x1 > x2;
-	//}
-	//else if (lParamSort == 1) {     //按照文本长度比较
-	//	return pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam1), 1).GetLength() > pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam2), 1).GetLength();
-	//}
+	if (lParamSort == 0) {          //按照文本ASCII比较
+		UCHAR x1 = *(UCHAR*)pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam1), 1).GetBuffer();
+		UCHAR x2 = *(UCHAR*)pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam2), 1).GetBuffer();
+		return x1 > x2;
+	}
+	else if (lParamSort == 1) {     //按照文本长度比较
+		return pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam1), 1).GetLength() > pMaindlg->m_page1.m_command.GetItemText(static_cast<int>(lParam2), 1).GetLength();
+	}
 	return 0;
 }
 

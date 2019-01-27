@@ -94,7 +94,7 @@ BOOL EnumEsig() {
 
 extc int _export cdecl ODBG_Plugindata(char shortname[32])
 {
-	strcpy(shortname, "E-Debug Plus");
+	strcpy_s(shortname, 13, "E-Debug Plus");
 	return PLUGIN_VERSION;
 }
 
@@ -124,7 +124,7 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 {
 	if (origin == PM_MAIN)
 	{
-		strcpy(data, "0&静态编译|1&扫描模式|2&关于软件 ");
+		strcpy(data, "0&开始分析|1&关于软件");
 		return 1;
 	}
 	if (origin == PM_DISASM || origin == PM_CPUDUMP) {
@@ -137,21 +137,13 @@ extc int _export cdecl ODBG_Pluginmenu(int origin, CHAR data[4096], VOID *item)
 extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 {
 	if (origin == PM_MAIN) {
-		if (action == 2) {
+		if (action == 1) {
 			CString szInfo;
 			szInfo += "Plugin:E-Debug Plus\r\n";
 			szInfo += "Verion:1.15\r\n";
 			szInfo += " Thanks to Xjun";
 			MessageBox(NULL, szInfo, L"About", MB_ICONINFORMATION);
 			return;
-		}
-		else if (action == 0)
-		{
-			//AnalysisMode = StaticMode;
-		}
-		else if (action == 1) {
-			//AnalysisMode = CMode;
-			//return; //To Be Continued
 		}
 
 		if (Getcputhreadid() == 0) {
