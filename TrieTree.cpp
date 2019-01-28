@@ -256,21 +256,30 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 	for (UINT n = 0;n < FuncTxt.length();n++) {
 		switch (FuncTxt[n])
 		{
-		case '-':
+		case '-':	//Check 1次
 			if (FuncTxt[n + 1] == '-' && FuncTxt[n + 2] == '>') {		//长跳转
 				if (*pSrc != 0xE9) {
 					return false;
 				}
-				DWORD offset = *(DWORD*)(pSrc + 1);
-				pSrc = pSrc + offset + 5;
-				if (pEAnalysisEngine->FindVirutalSection((ULONG)pSrc) == -1) {	//跳转到其它区段
-					return false;	//暂时当做失败
+				ULONG JmpSrc = (ULONG)pSrc + *(DWORD*)(pSrc + 1) + 5;	//先取得jmp的虚拟地址
+
+				INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)pSrc);	//以当前区段为参考系
+
+				ULONG oaddr = pEAnalysisEngine->V2O(JmpSrc, BaseIndex);	//转换为实际代码中的地址
+
+				INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//判断跳转是否合理
+				if (index == -1) {
+					index = pEAnalysisEngine->AddSection(oaddr);
+					if (index == -1) {
+						return false;
+					}
 				}
+				pSrc = (UCHAR*)pEAnalysisEngine->O2V(oaddr, index);
 				n = n + 2;
 				continue;
 			}
 			break;
-		case '<':
+		case '<':		//Check 2次
 			if (FuncTxt[n + 1] == '[') {						//CALLAPI
 				if (*pSrc != 0xFF || *(pSrc + 1) != 0x15) {
 					return false;
@@ -281,35 +290,44 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 				}
 				string IATEAT = FuncTxt.substr(n + 2, post - n - 2);   //得到文本中的IAT函数
 
-				CString IATCom;
-				CString EATCom;
+				string IATCom;
+				string EATCom;
 				char buffer[256] = { 0 };
 				int EATpos = IATEAT.find("||");
 				if (EATpos != -1) {            //存在自定义EAT
-					IATCom = IATEAT.substr(0, EATpos).c_str();
-					EATCom = IATEAT.substr(EATpos + 2).c_str();
+					IATCom = IATEAT.substr(0, EATpos);
+					EATCom = IATEAT.substr(EATpos + 2);
 				}
 				else
 				{
-					IATCom = IATEAT.c_str();
-					EATCom = IATEAT.substr(IATEAT.find('.') + 1).c_str();
+					IATCom = IATEAT;
+					EATCom = IATEAT.substr(IATEAT.find('.') + 1);
 				}
 
-				ULONG addr = *(ULONG*)(pSrc + 2);
-				//FindIndex..Todo
-				if (Findname(addr, NM_IMPORT, buffer) != 0 && IATCom.CompareNoCase(A2W(buffer)) == 0) {  //首先IAT匹配
+				ULONG oaddr = *(ULONG*)(pSrc + 2);		//得到IAT函数的真实地址
+
+				if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(),buffer) == 0) {  //首先IAT匹配
 					pSrc = pSrc + 6;
 					n = post + 1;
 					continue;
 				}
-				if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, 0), NM_EXPORT, buffer) != 0 && EATCom.CompareNoCase(A2W(buffer)) == 0) {      //EAT匹配
+				
+				INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//寻找地址所在index
+				if (index == -1) {
+					index = pEAnalysisEngine->AddSection(oaddr);
+					if (index == -1) {
+						return false;
+					}
+				}
+
+				if (Findname(*(ULONG*)pEAnalysisEngine->O2V(oaddr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(),buffer) == 0) {      //EAT匹配
 					pSrc = pSrc + 6;
 					n = post + 1;
 					continue;
 				}
 				return false;
 			}
-			else					  //NORMALCALL
+			else					  //NORMALCALL Check 1次
 			{
 				if (*pSrc != 0xE8) {
 					return false;
@@ -319,25 +337,37 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 					return false;
 				}
 				string SubFunc = FuncTxt.substr(n + 1, post - n - 1);   //子函数名称
-				DWORD addr = (DWORD)pSrc + *(DWORD*)(pSrc + 1) + 5;
-				if (m_RFunc[addr] == SubFunc) {       //为什么不先检查函数地址合法性?因为绝大部分函数都是合法的
+
+				ULONG CallSrc = (ULONG)pSrc + *(DWORD*)(pSrc + 1) + 5;	//得到虚拟地址
+
+				INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)pSrc);	//以当前区段为参考系
+
+				ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, BaseIndex);	//转换为实际代码中的地址
+
+				if (m_RFunc[oaddr] == SubFunc) {       //为什么不先检查函数地址合法性?因为绝大部分函数都是合法的
 					pSrc = pSrc + 5;
 					n = post;
 					continue;
 				}
-				if (pEAnalysisEngine->FindVirutalSection(addr) == -1) {		//这种方法可能有一定的不稳定性
-					return false;	//暂时不支持CALL其它区段代码
+
+				INT index = pEAnalysisEngine->FindOriginSection(oaddr);
+				if (index == -1) {		//CALL到其它区段了...
+					index = pEAnalysisEngine->AddSection(oaddr);
+					if (index == -1) {
+						return false;
+					}
 				}
-				if (CmpCode((UCHAR*)addr, m_subFunc[SubFunc])) {
+
+				if (CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[SubFunc])) {
 					pSrc = pSrc + 5;
 					n = post;
-					m_RFunc[addr] = SubFunc;
+					m_RFunc[oaddr] = SubFunc;
 					continue;
 				}
 				return false;
 			}
 			break;
-		case '[':
+		case '[':		// Check 1次
 			if (*pSrc != 0xFF || *(pSrc + 1) != 0x25) {
 				return false;
 			}
@@ -350,30 +380,37 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 					return false;
 				}
 				string IATEAT = FuncTxt.substr(n + 1, post - n - 1);
-				if (pEAnalysisEngine->FindVirutalSection((ULONG)pSrc + 2) == -1) {
-					return false;
-				}
-				CString IATCom;
-				CString EATCom;
+
+				string IATCom;
+				string EATCom;
 				char buffer[256] = { 0 };
 				int EATpos = IATEAT.find("||");
 				if (EATpos != -1) {            //存在自定义EAT
-					IATCom = IATEAT.substr(0, EATpos).c_str();
-					EATCom = IATEAT.substr(EATpos + 2).c_str();
+					IATCom = IATEAT.substr(0, EATpos);
+					EATCom = IATEAT.substr(EATpos + 2);
 				}
 				else
 				{
-					IATCom = IATEAT.c_str();
-					EATCom = IATEAT.substr(IATEAT.find('.') + 1).c_str();
+					IATCom = IATEAT;
+					EATCom = IATEAT.substr(IATEAT.find('.') + 1);
 				}
 
 				ULONG addr = *(ULONG*)(pSrc + 2);
-				if (Findname(addr, NM_IMPORT, buffer) != 0 && IATCom.CompareNoCase(A2W(buffer)) == 0) {  //首先IAT匹配
+				if (Findname(addr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(),buffer) == 0) {  //首先IAT匹配
 					pSrc = pSrc + 6;
 					n = post;
 					continue;
 				}
-				if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, 0), NM_EXPORT, buffer) != 0 && EATCom.CompareNoCase(A2W(buffer)) == 0) {      //EAT匹配
+
+				int index = pEAnalysisEngine->FindOriginSection(addr);
+				if (index == -1) {
+					index = pEAnalysisEngine->AddSection(addr);
+					if (index == -1) {
+						return false;
+					}
+				}
+
+				if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(),buffer) == 0) {      //EAT匹配
 					pSrc = pSrc + 6;
 					n = post;
 					continue;
@@ -411,7 +448,7 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 
 char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 	
-	for (UINT i = 0;i < p->SpecialNodes.size();i++) {
+	for (UINT i = 0;i < p->SpecialNodes.size();i++) {		//Check 1次
 		switch (p->SpecialNodes[i]->SpecialType)
 		{
 		case TYPE_LONGJMP:	//Check 1次
@@ -449,7 +486,7 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {		//此函数已经匹配过一次
 				return Match(p->SpecialNodes[i], FuncSrc + 5);
 			}
-
+			
 			INT index = pEAnalysisEngine->FindOriginSection(oaddr);
 			if (index == -1) {		//CALL到其它区段了...
 				index = pEAnalysisEngine->AddSection(oaddr);
@@ -458,8 +495,12 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 					continue;
 				}
 			}
-			if (CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->SpecialNodes[i]->EsigText])) {
-				return Match(p->SpecialNodes[i], FuncSrc + 5);
+			if (!CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->SpecialNodes[i]->EsigText])) {
+				continue;
+			}
+			char* temp = Match(p->SpecialNodes[i], FuncSrc + 5);	//存在内容一样但是名称不一样的函数,这会使分支走错
+			if (temp) {
+				return temp;
 			}
 			continue;
 		}
@@ -523,6 +564,7 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			}
 
 			ULONG oaddr = *(ULONG*)(FuncSrc + 2);			//得到IAT函数的真实地址
+
 			if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {		//首先IAT匹配
 				return Match(p->SpecialNodes[i], FuncSrc + 6);
 			}
@@ -563,6 +605,7 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 		}
 		}
 	}
+	//To do 增加半通配符
 
 	//if ((p->SpecialNodes[i]->EsigText[0] == '?' || HByteToBin(p->SpecialNodes[i]->EsigText[0])==*(FuncSrc)>>4) &&(p->SpecialNodes[i]->EsigText[1] == '?'|| HByteToBin(p->SpecialNodes[i]->EsigText[1]) == *(FuncSrc)& 0x0F)) {		//第一个是通配符
 	//	return Match(p->SpecialNodes[i], FuncSrc + 1);		//继续匹配下一层

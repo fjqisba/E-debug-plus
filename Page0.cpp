@@ -114,9 +114,10 @@ void CPage0::On32772()	//应用特征
 
 		int flag = m_List.GetItemText(nPos, 1).Compare(L"已应用");	//是否已应用过特征
 
+		m_LibMap[info.Name].Command_addr.clear();
+		m_LibMap[info.Name].Command_name.clear();
+
 		if (flag == 0) {		//如果已经应用过则删除原先特征
-			m_LibMap[info.Name].Command_addr.clear();
-			m_LibMap[info.Name].Command_name.clear();
 			LVFINDINFO findinfo;
 			findinfo.flags = LVFI_PARTIAL | LVFI_STRING;
 			findinfo.psz = A2W(info.Name.c_str());

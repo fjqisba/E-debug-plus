@@ -147,7 +147,5 @@ void CMainWindow::OnClose()
 	if (MessageBox(L"确定要退出分析窗口吗？", L"退出提示", MB_ICONINFORMATION | MB_YESNO) == IDNO)
 		return; 
 
-	pEAnalysisEngine->~EAnalysis();
-
 	CDialog::OnClose();
 }

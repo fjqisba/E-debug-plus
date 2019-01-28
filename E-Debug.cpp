@@ -140,7 +140,8 @@ extc void _export cdecl ODBG_Pluginaction(int origin, int action, VOID *item)
 		if (action == 1) {
 			CString szInfo;
 			szInfo += "Plugin:E-Debug Plus\r\n";
-			szInfo += "Verion:1.15\r\n";
+			szInfo += "Verion:1.2\r\n";
+			szInfo += "Author:fjqisba\r\n";
 			szInfo += " Thanks to Xjun";
 			MessageBox(NULL, szInfo, L"About", MB_ICONINFORMATION);
 			return;

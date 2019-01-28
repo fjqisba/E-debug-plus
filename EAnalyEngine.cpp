@@ -7,6 +7,7 @@ E-debug   为分析易语言结构体提供支持的分析引擎
 #include "EAnalyEngine.h"
 
 extern CMainWindow *pMaindlg;
+extern map<string, LIBMAP> m_LibMap;
 EAnalysis	*pEAnalysisEngine;
 
 INT EAnalysis::MakeSureInValidSection(ULONG referaddr,ULONG virtualaddr){
@@ -95,14 +96,17 @@ INT EAnalysis::AddSection(ULONG addr) {
 
 EAnalysis::EAnalysis(ULONG dwVBase)
 {
+	for (UINT n = 0;n < SectionMap.size();n++) {
+		VirtualFree(SectionMap[n].SectionAddr, 0, MEM_RELEASE);
+	}
+	m_LibMap.clear();
+	SectionMap.clear();
 	UpdateSection(dwVBase);
 }
 
 EAnalysis::~EAnalysis()
 {
-	for (UINT n = 0;n < SectionMap.size();n++) {
-		VirtualFree(SectionMap[n].SectionAddr, 0, MEM_RELEASE);
-	}
+
 }
 
 BOOL EAnalysis::EStaticLibInit() {    //易语言静态编译 识别初始化
