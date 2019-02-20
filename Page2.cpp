@@ -232,8 +232,7 @@ static int CALLBACK CompareCmd(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort
 }
 
 static int CALLBACK CompareCount(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	return 1;
-	//return _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam1, 3)) > _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam2, 3));
+	return _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam1, 3)) > _ttoi(pMaindlg->m_page2.m_api.GetItemText(lParam2, 3));
 }
 
 void CPage2::OnLvnColumnclickListapi(NMHDR *pNMHDR, LRESULT *pResult)   //еепР

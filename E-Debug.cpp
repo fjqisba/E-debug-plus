@@ -101,15 +101,19 @@ extc int _export cdecl ODBG_Plugindata(char shortname[32])
 extc int _export cdecl ODBG_Plugininit(int ollydbgversion, HWND hw, DWORD *features)
 {
 	char tmpbuffer[MAX_PATH] = {};
-	GetCurrentDirectoryA(MAX_PATH, tmpbuffer);
-	StrCpyA((char*)DIRECTORY, tmpbuffer);
+	
+	
+	GetModuleFileNameA(0, tmpbuffer, MAX_PATH);
+	string temppath = tmpbuffer;
+	temppath = temppath.substr(0, temppath.rfind("\\"));
+	StrCpyA((char*)DIRECTORY, temppath.c_str());
 	
 	if (ollydbgversion < PLUGIN_VERSION)
 	{
 		Addtolist(0, 0, "提示: 插件版本与OD不匹配!");
 		return -1;
 	}
-	Addtolist(0, 0, "%s", "E-Debug Plus 1.2");
+	Addtolist(0, 0, "%s", "E-Debug Plus 1.22");
 	Addtolist(0, -1, "%s","  by:fjqisba");
 
 	//在这里修复一个OD 界面选项BUG

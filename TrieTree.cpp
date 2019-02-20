@@ -133,6 +133,8 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 		case '-':	//Check 1次
 			if (FuncTxt[n + 1] == '-' && FuncTxt[n + 2] == '>')
 			{
+				BasicTxt = "E9";
+				p = AddNode(p, BasicTxt);
 				p = AddSpecialNode(p, TYPE_LONGJMP, "");
 				n = n + 2;
 				continue;		//此continue属于外部循环
@@ -144,17 +146,23 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 				if (post == -1) {
 					return false;
 				}
+				BasicTxt = "FF";
+				p = AddNode(p, BasicTxt);
+				BasicTxt = "15";
+				p = AddNode(p, BasicTxt);
 				SpecialTxt = FuncTxt.substr(n + 2, post - n - 2);   //得到文本中的IAT函数
 				p = AddSpecialNode(p, TYPE_CALLAPI, SpecialTxt);
 				n = post + 1;
 				continue;
 			}
-			else {
+			else {											//普通的函数CALL
 				int post = FuncTxt.find('>', n);
 				if (post == -1) {
 					return false;
 				}
 				SpecialTxt = FuncTxt.substr(n + 1, post - n - 1);
+				BasicTxt = "E8";
+				p = AddNode(p, BasicTxt);
 				p = AddSpecialNode(p, TYPE_CALL, SpecialTxt);
 				n = post;
 				continue;
@@ -169,7 +177,11 @@ BOOL TrieTree::Insert(string& FuncTxt, const string& FuncName) {		//参数一为函数
 				if (post == -1) {
 					return false;
 				}
-				SpecialTxt = FuncTxt.substr(n, post - n + 1);
+				BasicTxt = "FF";
+				p = AddNode(p, BasicTxt);
+				BasicTxt = "25";
+				p = AddNode(p, BasicTxt);
+				SpecialTxt = FuncTxt.substr(n + 1, post - n - 1);
 				p = AddSpecialNode(p, TYPE_JMPAPI, SpecialTxt);
 				n = post;
 				continue;
@@ -418,6 +430,31 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 				return false;
 			}
 			break;
+		case '!':
+		{
+			int post = FuncTxt.find('!', n + 1);
+			if (post == -1) {
+				return false;
+			}
+
+			string Conname = FuncTxt.substr(n + 1, post - n - 1);
+	
+			ULONG ConSrc = *(ULONG*)pSrc;
+			INT ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
+			if (ConIndex == -1) {		//在区段外则添加区段
+				ConIndex = pEAnalysisEngine->AddSection(ConSrc);
+				if (ConIndex == -1) {
+					pMaindlg->outputInfo("Type_Constant申请内存失败");
+					return false;
+				}
+			}
+			if (m_RFunc[ConSrc] == Conname || CmpCode((UCHAR*)pEAnalysisEngine->O2V(ConSrc, ConIndex), m_subFunc[Conname])) {
+				pSrc = pSrc + 4;
+				n = post;
+				continue;
+			}
+			return false;
+		}
 		case '?':
 			if (FuncTxt[n + 1] == '?') {	//全通配符
 				n++;
@@ -453,10 +490,7 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 		{
 		case TYPE_LONGJMP:	//Check 1次
 		{
-			if (*FuncSrc != 0xE9) {
-				continue;
-			}
-			ULONG JmpSrc = (ULONG)FuncSrc + *(DWORD*)(FuncSrc + 1) + 5;	//先取得jmp的虚拟地址
+			ULONG JmpSrc = (ULONG)FuncSrc - 1 + *(DWORD*)(FuncSrc)+5;	//先取得jmp的虚拟地址
 
 			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
 
@@ -466,25 +500,27 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			if (index == -1) {
 				index = pEAnalysisEngine->AddSection(oaddr);
 				if (index == -1) {
-					pMaindlg->outputInfo("Jmp地址错误！！！");
+					//pMaindlg->outputInfo("Jmp地址错误！！！");
 					continue;
 				}
 			}
-			return Match(p->SpecialNodes[i], (UCHAR*)pEAnalysisEngine->O2V(oaddr, index));
+
+			char* temp = Match(p->SpecialNodes[i], (UCHAR*)pEAnalysisEngine->O2V(oaddr, index));
+			if (temp) {
+				return temp;
+			}
+			continue;
 		}
 		case TYPE_CALL:		//Check 2次
 		{
-			if (*FuncSrc != 0xE8) {
-				continue;
-			}
-			ULONG CallSrc = (ULONG)FuncSrc + *(DWORD*)(FuncSrc + 1) + 5;	//得到虚拟地址
+			ULONG CallSrc = (ULONG)FuncSrc - 1 + *(DWORD*)(FuncSrc)+5;	//得到虚拟地址
 
 			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
 
 			ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, BaseIndex);	//转换为实际代码中的地址
 
 			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {		//此函数已经匹配过一次
-				return Match(p->SpecialNodes[i], FuncSrc + 5);
+				return Match(p->SpecialNodes[i], FuncSrc + 4);
 			}
 			
 			INT index = pEAnalysisEngine->FindOriginSection(oaddr);
@@ -498,18 +534,14 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			if (!CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->SpecialNodes[i]->EsigText])) {
 				continue;
 			}
-			char* temp = Match(p->SpecialNodes[i], FuncSrc + 5);	//存在内容一样但是名称不一样的函数,这会使分支走错
+			char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);	//存在内容一样但是名称不一样的函数,这会使分支走错
 			if (temp) {
 				return temp;
 			}
 			continue;
 		}
-		case TYPE_JMPAPI:	//Check 1次
+		case TYPE_JMPAPI:	//Check 2次
 		{
-			if (*FuncSrc != 0xFF || *(FuncSrc + 1) != 0x25) {
-				continue;
-			}
-
 			string IATEAT = p->SpecialNodes[i]->EsigText;
 			string IATCom;
 			string EATCom;
@@ -525,9 +557,10 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 				IATCom = IATEAT;
 				EATCom = IATEAT.substr(IATEAT.find('.') + 1);
 			}
-			DWORD addr = *(FuncSrc + 2);
+
+			ULONG addr = *(ULONG*)FuncSrc;
 			if (Findname(addr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {
-				return Match(p->SpecialNodes[i], FuncSrc + 6);
+				return Match(p->SpecialNodes[i], FuncSrc + 4);
 			}
 			int index = pEAnalysisEngine->FindOriginSection(addr);
 			if (index == -1) {
@@ -537,15 +570,16 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 				}
 			}
 			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
-				return Match(p->SpecialNodes[i], FuncSrc + 6);
+				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
+				if (temp) {
+					return temp;
+				}
 			}
 			continue;
 		}
-		case TYPE_CALLAPI:		//Check 1次
+		case TYPE_CALLAPI:		//Check 2次
 		{
-			if (*FuncSrc != 0xFF || *(FuncSrc + 1) != 0x15) {
-				continue;
-			}
+
 			string IATEAT = p->SpecialNodes[i]->EsigText;
 
 			string IATCom;
@@ -563,10 +597,13 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 				EATCom = IATEAT.substr(IATEAT.find('.') + 1);
 			}
 
-			ULONG oaddr = *(ULONG*)(FuncSrc + 2);			//得到IAT函数的真实地址
+			ULONG oaddr = *(ULONG*)(FuncSrc);			//得到IAT函数的真实地址
 
 			if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {		//首先IAT匹配
-				return Match(p->SpecialNodes[i], FuncSrc + 6);
+				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
+				if (temp) {
+					return temp;
+				}
 			}
 
 			INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//寻找地址所在index
@@ -578,7 +615,10 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 			}
 
 			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(oaddr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
-				return Match(p->SpecialNodes[i], FuncSrc + 6);
+				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
+				if (temp) {
+					return temp;
+				}
 			}
 			continue;
 		}
@@ -595,13 +635,20 @@ char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
 				}
 			}
 			if (m_RFunc[ConSrc] == p->SpecialNodes[i]->EsigText || CmpCode((UCHAR*)pEAnalysisEngine->O2V(ConSrc, ConIndex), m_subFunc[p->SpecialNodes[i]->EsigText])) {
-				return Match(p->SpecialNodes[i], FuncSrc + 4);
+				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
+				if (temp) {
+					return temp;
+				}
 			}
 			continue;
 		}
 		case TYPE_ALLPASS:
 		{
-			return Match(p->SpecialNodes[i], FuncSrc + 1);
+			char* temp = Match(p->SpecialNodes[i], FuncSrc + 1);
+			if (temp) {
+				return temp;
+			}
+			continue;
 		}
 		}
 	}
