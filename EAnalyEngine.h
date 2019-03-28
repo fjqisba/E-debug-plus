@@ -63,7 +63,6 @@ public:
 
 	ULONG DLLCALL=0;		//保存DLL_CALL地址,在查找DLL命令的时候会用到
 
-
 	PEENTRYINFO pEnteyInfo; // entry info
 private:
 protected:

@@ -136,7 +136,6 @@ void CPage0::On32772()	//Ó¦ÓÃÌØÕ÷
 		
 		Tree.ScanSig(pEAnalysisEngine->SectionMap[0].SectionAddr, pEAnalysisEngine->SectionMap[0].dwSize, info.Name);
 
-
 		UINT Pos = 0;
 
 		CString LibStr;

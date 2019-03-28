@@ -27,4 +27,5 @@ public:
 	CListCtrl m_List;
 	afx_msg void OnNMRClickList1(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void On32772();
+	BOOL ApplyEsig(string& name);
 };

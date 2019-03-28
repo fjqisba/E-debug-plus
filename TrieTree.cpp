@@ -244,6 +244,7 @@ TrieTreeNode* TrieTree::AddNode(TrieTreeNode* p, string& Txt) {
 	p->ChildNodes[index] = NewNode;      //当前节点加入新子节点
 
 	NewNode->EsigText = new char[Txt.length() + 1];strcpy_s(NewNode->EsigText, Txt.length() + 1, Txt.c_str());//赋值EsigTxt
+	NewNode->SpecialType = TYPE_NORMAL;
 	return NewNode;
 }
 
@@ -483,194 +484,191 @@ BOOL TrieTree::CmpCode(UCHAR* FuncSrc, string& FuncTxt) {
 	return true;
 }
 
-char* TrieTree::MatchSpecial(const TrieTreeNode* p, UCHAR* FuncSrc) {
-	
-	for (UINT i = 0;i < p->SpecialNodes.size();i++) {		//Check 1次
-		switch (p->SpecialNodes[i]->SpecialType)
-		{
-		case TYPE_LONGJMP:	//Check 1次
-		{
-			ULONG JmpSrc = (ULONG)FuncSrc - 1 + *(DWORD*)(FuncSrc)+5;	//先取得jmp的虚拟地址
-
-			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
-
-			ULONG oaddr = pEAnalysisEngine->V2O(JmpSrc, BaseIndex);	//转换为实际代码中的地址
-
-			INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//判断跳转是否合理
-			if (index == -1) {
-				index = pEAnalysisEngine->AddSection(oaddr);
-				if (index == -1) {
-					//pMaindlg->outputInfo("Jmp地址错误！！！");
-					continue;
-				}
-			}
-
-			char* temp = Match(p->SpecialNodes[i], (UCHAR*)pEAnalysisEngine->O2V(oaddr, index));
-			if (temp) {
-				return temp;
-			}
-			continue;
-		}
-		case TYPE_CALL:		//Check 2次
-		{
-			ULONG CallSrc = (ULONG)FuncSrc - 1 + *(DWORD*)(FuncSrc)+5;	//得到虚拟地址
-
-			INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)FuncSrc);	//以当前区段为参考系
-
-			ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, BaseIndex);	//转换为实际代码中的地址
-
-			if (m_RFunc[oaddr] == p->SpecialNodes[i]->EsigText) {		//此函数已经匹配过一次
-				return Match(p->SpecialNodes[i], FuncSrc + 4);
-			}
-			
-			INT index = pEAnalysisEngine->FindOriginSection(oaddr);
-			if (index == -1) {		//CALL到其它区段了...
-				index = pEAnalysisEngine->AddSection(oaddr);
-				if (index == -1) {
-					//pMaindlg->outputInfo("CALL地址错误！！！");
-					continue;
-				}
-			}
-			if (!CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->SpecialNodes[i]->EsigText])) {
-				continue;
-			}
-			char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);	//存在内容一样但是名称不一样的函数,这会使分支走错
-			if (temp) {
-				return temp;
-			}
-			continue;
-		}
-		case TYPE_JMPAPI:	//Check 2次
-		{
-			string IATEAT = p->SpecialNodes[i]->EsigText;
-			string IATCom;
-			string EATCom;
-			char buffer[256] = { 0 };
-
-			int EATpos = IATEAT.find("||");
-			if (EATpos != -1) {            //存在自定义EAT
-				IATCom = IATEAT.substr(0, EATpos);
-				EATCom = IATEAT.substr(EATpos + 2);
-			}
-			else
-			{
-				IATCom = IATEAT;
-				EATCom = IATEAT.substr(IATEAT.find('.') + 1);
-			}
-
-			ULONG addr = *(ULONG*)FuncSrc;
-			if (Findname(addr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {
-				return Match(p->SpecialNodes[i], FuncSrc + 4);
-			}
-			int index = pEAnalysisEngine->FindOriginSection(addr);
-			if (index == -1) {
-				index = pEAnalysisEngine->AddSection(addr);
-				if (index == -1) {
-					continue;
-				}
-			}
-			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
-				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
-				if (temp) {
-					return temp;
-				}
-			}
-			continue;
-		}
-		case TYPE_CALLAPI:		//Check 2次
-		{
-
-			string IATEAT = p->SpecialNodes[i]->EsigText;
-
-			string IATCom;
-			string EATCom;
-			char buffer[256] = { 0 };
-
-			int EATpos = IATEAT.find("||");
-			if (EATpos != -1) {					//存在自定义EAT
-				IATCom = IATEAT.substr(0, EATpos);
-				EATCom = IATEAT.substr(EATpos + 2);
-			}
-			else
-			{
-				IATCom = IATEAT;
-				EATCom = IATEAT.substr(IATEAT.find('.') + 1);
-			}
-
-			ULONG oaddr = *(ULONG*)(FuncSrc);			//得到IAT函数的真实地址
-
-			if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {		//首先IAT匹配
-				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
-				if (temp) {
-					return temp;
-				}
-			}
-
-			INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//寻找地址所在index
-			if (index == -1) {
-				index = pEAnalysisEngine->AddSection(oaddr);
-				if (index == -1) {
-					continue;
-				}
-			}
-
-			if (Findname(*(ULONG*)pEAnalysisEngine->O2V(oaddr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
-				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
-				if (temp) {
-					return temp;
-				}
-			}
-			continue;
-		}
-		case TYPE_CONSTANT:		//Check 2次
-		{
-			ULONG ConSrc = *(ULONG*)FuncSrc;	//取得实际地址
-
-			INT ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
-			if (ConIndex == -1) {		//在区段外则添加区段
-				ConIndex = pEAnalysisEngine->AddSection(ConSrc);
-				if (ConIndex == -1) {
-					pMaindlg->outputInfo("Type_Constant申请内存失败");
-					continue;
-				}
-			}
-			if (m_RFunc[ConSrc] == p->SpecialNodes[i]->EsigText || CmpCode((UCHAR*)pEAnalysisEngine->O2V(ConSrc, ConIndex), m_subFunc[p->SpecialNodes[i]->EsigText])) {
-				char* temp = Match(p->SpecialNodes[i], FuncSrc + 4);
-				if (temp) {
-					return temp;
-				}
-			}
-			continue;
-		}
-		case TYPE_ALLPASS:
-		{
-			char* temp = Match(p->SpecialNodes[i], FuncSrc + 1);
-			if (temp) {
-				return temp;
-			}
-			continue;
-		}
-		}
+BOOL TrieTree::CheckNode(TrieTreeNode* p,UCHAR** FuncSrc) {
+	switch (p->SpecialType)
+	{
+	case TYPE_NORMAL:
+	{
+		return true;
 	}
+	case TYPE_LONGJMP:
+	{
+		ULONG JmpSrc = (ULONG)*FuncSrc - 1 + *(DWORD*)(*FuncSrc)+5;	//先取得jmp的虚拟地址
+		INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)*FuncSrc);	//以当前区段为参考系
+		ULONG oaddr = pEAnalysisEngine->V2O(JmpSrc, BaseIndex);	//转换为实际代码中的地址
+		INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//判断跳转是否合理
+		if (index == -1) {
+			index = pEAnalysisEngine->AddSection(oaddr);
+			if (index == -1) {
+				return false;
+			}
+		}
+		*FuncSrc = (UCHAR*)pEAnalysisEngine->O2V(oaddr, index);
+		return true;
+	}
+	case TYPE_CALL:
+	{
+		ULONG CallSrc = (ULONG)*FuncSrc - 1 + *(DWORD*)(*FuncSrc) + 5;	//得到虚拟地址
+		INT BaseIndex = pEAnalysisEngine->FindVirutalSection((ULONG)*FuncSrc);	//以当前区段为参考系
+		ULONG oaddr = pEAnalysisEngine->V2O(CallSrc, BaseIndex);	//转换为实际代码中的地址
+		if (m_RFunc[oaddr] == p->EsigText) {		//此函数已经匹配过一次
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+		INT index = pEAnalysisEngine->FindOriginSection(oaddr);
+		if (index == -1) {		//CALL到其它区段了...
+			index = pEAnalysisEngine->AddSection(oaddr);
+			if (index == -1) {
+				return false;
+			}
+		}
+		if (!CmpCode((UCHAR*)pEAnalysisEngine->O2V(oaddr, index), m_subFunc[p->EsigText])) {
+			return false;
+		}
+		*FuncSrc = *FuncSrc + 4;
+		return true;
+	}
+	case TYPE_JMPAPI:
+	{
+		string IATEAT = p->EsigText;
+		string IATCom;
+		string EATCom;
+		char buffer[256] = { 0 };
+
+		int EATpos = IATEAT.find("||");
+		if (EATpos != -1) {            //存在自定义EAT
+			IATCom = IATEAT.substr(0, EATpos);
+			EATCom = IATEAT.substr(EATpos + 2);
+		}
+		else
+		{
+			IATCom = IATEAT;
+			EATCom = IATEAT.substr(IATEAT.find('.') + 1);
+		}
+
+		ULONG addr = *(ULONG*)*FuncSrc;
+		if (Findname(addr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+		int index = pEAnalysisEngine->FindOriginSection(addr);
+		if (index == -1) {
+			index = pEAnalysisEngine->AddSection(addr);
+			if (index == -1) {
+				return false;
+			}
+		}
+		if (Findname(*(ULONG*)pEAnalysisEngine->O2V(addr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+		return false;
+	}
+	case TYPE_CALLAPI:
+	{
+		string IATEAT = p->EsigText;
+
+		string IATCom;
+		string EATCom;
+		char buffer[256] = { 0 };
+
+		int EATpos = IATEAT.find("||");
+		if (EATpos != -1) {					//存在自定义EAT
+			IATCom = IATEAT.substr(0, EATpos);
+			EATCom = IATEAT.substr(EATpos + 2);
+		}
+		else
+		{
+			IATCom = IATEAT;
+			EATCom = IATEAT.substr(IATEAT.find('.') + 1);
+		}
+
+		ULONG oaddr = *(ULONG*)(*FuncSrc);			//得到IAT函数的真实地址
+
+		if (Findname(oaddr, NM_IMPORT, buffer) != 0 && stricmp(IATCom.c_str(), buffer) == 0) {		//首先IAT匹配
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+
+		INT index = pEAnalysisEngine->FindOriginSection(oaddr);	//寻找地址所在index
+		if (index == -1) {
+			index = pEAnalysisEngine->AddSection(oaddr);
+			if (index == -1) {
+				return false;
+			}
+		}
+
+		if (Findname(*(ULONG*)pEAnalysisEngine->O2V(oaddr, index), NM_EXPORT, buffer) != 0 && stricmp(EATCom.c_str(), buffer) == 0) {      //EAT匹配
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+		return false;
+	}
+	case TYPE_CONSTANT:
+	{
+		ULONG ConSrc = *(ULONG*)*FuncSrc;	//取得实际地址
+		INT ConIndex = pEAnalysisEngine->FindOriginSection(ConSrc);	//寻找地址所在index
+		if (ConIndex == -1) {		//在区段外则添加区段
+			ConIndex = pEAnalysisEngine->AddSection(ConSrc);
+			if (ConIndex == -1) {
+				return false;
+			}
+		}
+		if (m_RFunc[ConSrc] == p->EsigText || CmpCode((UCHAR*)pEAnalysisEngine->O2V(ConSrc, ConIndex), m_subFunc[p->EsigText])) {
+			*FuncSrc = *FuncSrc + 4;
+			return true;
+		}
+		return false;
+	}
+	case TYPE_ALLPASS:
+	{
+		*FuncSrc = *FuncSrc + 1;
+		return true;
+	}
+	default:
+		break;
+	}
+
 	//To do 增加半通配符
 
 	//if ((p->SpecialNodes[i]->EsigText[0] == '?' || HByteToBin(p->SpecialNodes[i]->EsigText[0])==*(FuncSrc)>>4) &&(p->SpecialNodes[i]->EsigText[1] == '?'|| HByteToBin(p->SpecialNodes[i]->EsigText[1]) == *(FuncSrc)& 0x0F)) {		//第一个是通配符
 	//	return Match(p->SpecialNodes[i], FuncSrc + 1);		//继续匹配下一层
 	//}
-	return NULL;
+	return false;
 }
 
-char* TrieTree::Match(const TrieTreeNode* p, UCHAR* FuncSrc) {
-	if (p->FuncName) {		//如果成功寻找到函数,且未曾匹配过则返回结果   --存在相同地址的不同函数,这将导致第一个函数匹配成功,第二个函数匹配失败
-		return p->FuncName;
+char* TrieTree::Match(TrieTreeNode* p,UCHAR* FuncSrc) {	
+
+	stack<TrieTreeNode*> StackNode;	//节点
+	stack<UCHAR*> StackFuncSrc;		//节点地址
+
+	StackNode.push(p);
+	StackFuncSrc.push(FuncSrc);
+	//进入循环初始条件
+
+	while (!StackNode.empty()) {
+		p = StackNode.top();
+		StackNode.pop();
+		FuncSrc = StackFuncSrc.top();
+		StackFuncSrc.pop();
+		//取回堆栈顶端节点
+		if (p->FuncName) {
+			return p->FuncName;
+		}
+		if (!CheckNode(p, &FuncSrc)) {
+			continue;
+		}
+		//判断结果
+		for (UINT i = 0;i < p->SpecialNodes.size();i++) {
+			StackNode.push(p->SpecialNodes[i]);
+			StackFuncSrc.push(FuncSrc);
+		}
+		if (p->ChildNodes[*FuncSrc]) {
+			StackNode.push(p->ChildNodes[*FuncSrc]);
+			StackFuncSrc.push(FuncSrc + 1);
+		}
 	}
 
-	if (p->ChildNodes[*FuncSrc]) {
-		return Match(p->ChildNodes[*FuncSrc], FuncSrc + 1);
-	}
-	else {
-		return MatchSpecial(p, FuncSrc);
-	}
 	return NULL;
 }
 
@@ -704,4 +702,5 @@ void TrieTree::Destroy(TrieTreeNode* p) {
 TrieTree::TrieTree()
 {
 	root = new TrieTreeNode();
+	root->SpecialType = TYPE_NORMAL;
 }

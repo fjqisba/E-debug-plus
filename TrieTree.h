@@ -3,6 +3,7 @@
 #include "Page0.h"
 #include "Page1.h"
 #include "EAnalyEngine.h"
+#include <stack>
 
 #define TYPE_NORMAL 0	
 #define TYPE_LONGJMP 1	       //      -->
@@ -23,8 +24,6 @@ typedef struct FuncMap
 	vector<string>  Command_name;	//函数名称
 	vector<DWORD>   Command_addr;	//函数地址
 }*pFuncMap;
-
-
 
 
 class TrieTreeNode {
@@ -55,8 +54,6 @@ public:
 	char* MatchSig(UCHAR* CodeSrc);					//单点匹配
 	
 	
-	
-
 protected:
 	BOOL Insert(string& FuncTxt, const string& FuncName);		//插入函数,节点的函数名必须唯一！
 	BOOL CmpCode(UCHAR* FuncSrc, string& FuncTxt);				//低配版匹配函数法,用于匹配子函数,此函数尚未解决递归问题
@@ -66,13 +63,12 @@ private:
 	TrieTreeNode* AddNode(TrieTreeNode* p, string& Txt);		//增加普通节点
 	TrieTreeNode* AddSpecialNode(TrieTreeNode*p, UINT type, string Txt);	//增加特殊节点
 
-	
+	BOOL CheckNode(TrieTreeNode* p, UCHAR** FuncSrc);		//当前特殊节点是否匹配
 
 	void Destroy(TrieTreeNode* p);
-	char* Match(const TrieTreeNode*p, UCHAR* FuncSrc);			//参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
-	char* MatchSpecial(const TrieTreeNode*p, UCHAR* FuncSrc);   //特殊节点版
-	BOOL IsAligned=false;
+	char* Match(TrieTreeNode*p, UCHAR* FuncSrc);			 //参数一为匹配节点,参数二为匹配地址,返回匹配成功的函数文本
 	
+	BOOL IsAligned=false;
 	
 	map<string, string> m_subFunc;	//子函数,函数名称和函数文本一一映射
 
